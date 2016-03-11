@@ -1,0 +1,27 @@
+---
+name: postgres
+packages:
+  - postgres
+templates:
+  bin/ctl: bin/ctl
+  bin/monit_debugger: bin/monit_debugger
+  data/properties.sh.erb: data/properties.sh
+  helpers/ctl_setup.sh: helpers/ctl_setup.sh
+  helpers/ctl_utils.sh: helpers/ctl_utils.sh
+
+  config/postgresql.conf: config/postgresql.conf
+  config/hba.conf:        config/hba.conf
+  config/ident.conf:      config/ident.conf
+
+properties:
+  postgres.backend:
+    name: A map of postgresql.conf configuration directives, keyed by name.
+    default: {}
+
+  postgres.hba:
+    name: A list of pg_hba.conf configuration acls.  See Section 19.1 of the PostgreSQL manual.
+    default: []
+
+  postgres.ident:
+    name: A list of pg_ident.conf configuration entries  See Section 19.2 of the PostgreSQL manual.
+    default: []

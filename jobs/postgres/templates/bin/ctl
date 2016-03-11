@@ -1,0 +1,41 @@
+#!/bin/bash
+
+set -e # exit immediately if a simple command exits with a non-zero status
+set -u # report the usage of uninitialized variables
+
+# Setup env vars and folders for the webapp_ctl script
+source /var/vcap/jobs/postgres/helpers/ctl_setup.sh 'postgres'
+
+export PORT=${PORT:-5000}
+export LANG=en_US.UTF-8
+
+case $1 in
+
+  start)
+    pid_guard $PIDFILE $JOB_NAME
+
+    # initialize data storage area if needed
+    datadir=/var/vcap/store/postgres/db
+    [ -d ${datadir} ] || chpst -u vcap:vcap initdb -D ${datadir}
+
+    exec chpst -u vcap:vcap postgres                     \
+         -c external_pid_file=${PIDFILE}                 \
+         -c data_directory=${datadir}                    \
+         -c config_file=${JOB_DIR}/config/postgresql.conf \
+         -c hba_file=${JOB_DIR}/config/hba.conf           \
+         -c ident_file=${JOB_DIR}/config/ident.conf       \
+         >>$LOG_DIR/$JOB_NAME.log 2>&1
+
+    ;;
+
+  stop)
+    kill_and_wait $PIDFILE
+
+    ;;
+  *)
+    echo "Usage: postgres_ctl {start|stop}"
+
+    ;;
+
+esac
+exit 0
