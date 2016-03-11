@@ -11,8 +11,8 @@ update:
 jobs:
   - name: postgres
     templates:
-    - name: postgres
-      release: postgres
+    - { release: postgres, name: postgres }
+    - { release: postgres, name: pgpool }
     instances: 1
     persistent_disk: 0
     resource_pool: small_z1

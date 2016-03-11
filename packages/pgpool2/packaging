@@ -1,0 +1,19 @@
+set -e # exit immediately if a simple command exits with a non-zero status
+set -u # report the usage of uninitialized variables
+
+# Detect # of CPUs so make jobs can be parallelized
+CPUS=$(grep -c ^processor /proc/cpuinfo)
+ # Available variables
+# $BOSH_COMPILE_TARGET - where this package & spec'd source files are available
+# $BOSH_INSTALL_TARGET - where you copy/install files to be included in package
+export HOME=/var/vcap
+
+
+# see http://www.pgpool.net/download.php?f=pgpool-II-3.5.0.tar.gz
+VERSION=3.5.0
+
+tar -xzf pgpool2/pgpool-II-${VERSION}.tar.gz
+cd pgpool-II-${VERSION}/
+./configure --prefix ${BOSH_INSTALL_TARGET} --with-pgsql=/var/vcap/packages/postgres
+make
+make install

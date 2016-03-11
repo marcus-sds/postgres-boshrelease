@@ -1,0 +1,5 @@
+check process pgpool
+  with pidfile /var/vcap/sys/run/pgpool/pgpool.pid
+  start program "/var/vcap/jobs/pgpool/bin/monit_debugger pgpool_ctl '/var/vcap/jobs/pgpool/bin/ctl start'"
+  stop program "/var/vcap/jobs/pgpool/bin/monit_debugger pgpool_ctl '/var/vcap/jobs/pgpool/bin/ctl stop'"
+  group vcap
