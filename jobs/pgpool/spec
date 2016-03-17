@@ -12,4 +12,21 @@ templates:
   config/pgpool.conf: config/pgpool.conf
   config/hba.conf:    config/hba.conf
 
-properties: {}
+properties:
+  pgpool.backend.hosts:
+    description: A list of backend host / IPs to pool connections to.
+    default: []
+  pgpool.backend.port:
+    description: The port that the PostgreSQL backends are listening on
+    default: 6432
+
+  pgpool.config:
+    description: A map of pgpool.conf configuration directives, keyed by name.
+    default: {}
+  pgpool.hba:
+    description: A list of pg_hba.conf configuration acls.  See Section 19.1 of the PostgreSQL manual.
+    default: []
+
+  pcp.config:
+    description: A map of pcp.conf configuration directives, keyed by name.
+    default: {}

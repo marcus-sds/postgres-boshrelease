@@ -20,10 +20,19 @@ jobs:
 
     properties:
       postgres:
+        config:
+          port: 6432
         replication:
           enabled: true
           master: (( grab jobs.postgres.networks.postgres1.static_ips[0] ))
           pool:   (( grab jobs.postgres.networks.postgres1.static_ips ))
+      pgpool:
+        backend:
+          hosts: (( grab jobs.postgres.networks.postgres1.static_ips ))
+          port: 6432
+        config:
+          port: 5432
+
 
 networks: (( param "please set networks" ))
 

@@ -16,7 +16,7 @@ templates:
   sql/setup-replication.sql: sql/setup-replication.sql
 
 properties:
-  postgres.backend:
+  postgres.config:
     description: A map of postgresql.conf configuration directives, keyed by name.
     default: {}
 
