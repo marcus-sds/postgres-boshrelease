@@ -1,4 +1,21 @@
 #!/bin/bash
+<%
+
+myip        = spec.networks.send(spec.networks.methods(false).first).ip
+masterip    = p('postgres.replication.master', '')
+replication = p('postgres.replication.enabled', false) && masterip != ''
+master      = replication && masterip == myip
+port        = p('postgres.backend.port', 5432)
+
+%>
+# first, some diagnostic info
+# ---------------------------
+#        myip | '<%= myip %>'
+#    masterip | '<%= masterip %>'
+#        port | <%= port %>
+# replication | <%= replication %>
+#      master | <%= master %>
+#
 
 set -e # exit immediately if a simple command exits with a non-zero status
 set -u # report the usage of uninitialized variables
@@ -9,28 +26,58 @@ source /var/vcap/jobs/postgres/helpers/ctl_setup.sh 'postgres'
 export PORT=${PORT:-5000}
 export LANG=en_US.UTF-8
 
+
+# datadir is where PostgreSQL will store the database files.  This really
+# *shouuld* be a persistent disk, unless you know what you are doing.
+datadir=/var/vcap/store/postgres/db
+
+# construct the list of options to pass to pg_ctl.  These mostly get passed
+# onto the `postgres` process on startup, but the `-p` flag is used by the
+# "wait" feature (-w) to ensure that the database has finished booting.
+opts="-p <%= port %>"
+opts="${opts} -c external_pid_file=${PIDFILE}"
+opts="${opts} -c data_directory=${datadir}"
+opts="${opts} -c config_file=${JOB_DIR}/config/postgresql.conf"
+opts="${opts} -c hba_file=${JOB_DIR}/config/hba.conf"
+opts="${opts} -c ident_file=${JOB_DIR}/config/ident.conf"
+
 case $1 in
 
   start)
     pid_guard $PIDFILE $JOB_NAME
 
-    # initialize data storage area if needed
-    datadir=/var/vcap/store/postgres/db
-    [ -d ${datadir} ] || chpst -u vcap:vcap initdb -D ${datadir}
+    if [[ ! -d ${datadir} ]]; then
+      (
+<% if replication && master %>
+        echo >&2 "[repl:master] DATADIR (${datadir}) not found; initializing"
+        chpst -u vcap:vcap pg_ctl -D ${datadir} initdb \
+          || rm -rf ${datadir}
+<% elsif replication && !master %>
+        echo >&2 "[repl:slave] DATADIR (${datadir}) not found; seeding from preferred master (<%= masterip %>)"
+        chpst -u vcap:vcap pg_basebackup -h <%= masterip %> -D ${datadir} -P -U replication --xlog-method=stream -R \
+          || rm -rf ${datadir}
+<% else %>
+        echo >&2 "[standalone] DATADIR (${datadir}) not found; initializing"
+        chpst -u vcap:vcap pg_ctl -D ${datadir} initdb \
+          || rm -rf ${datadir}
+<% end %>
+      ) >>$LOG_DIR/$JOB_NAME.log 2>&1
+    fi
 
-    exec chpst -u vcap:vcap postgres                     \
-         -c external_pid_file=${PIDFILE}                 \
-         -c data_directory=${datadir}                    \
-         -c config_file=${JOB_DIR}/config/postgresql.conf \
-         -c hba_file=${JOB_DIR}/config/hba.conf           \
-         -c ident_file=${JOB_DIR}/config/ident.conf       \
+    # run postgres!
+    chpst -u vcap:vcap pg_ctl -o "${opts}" -D ${datadir} -w -t 30 start \
          >>$LOG_DIR/$JOB_NAME.log 2>&1
 
+<% if replication && master %>
+    echo >>$LOG_DIR/$JOB_NAME.log "[repl:master] setting up replication"
+    psql -U vcap postgres < ${JOB_DIR}/sql/setup-replication.sql \
+         >>$LOG_DIR/$JOB_NAME.log 2>&1
+<% end %>
     ;;
 
   stop)
-    kill_and_wait $PIDFILE
-
+    chpst -u vcap:vcap pg_ctl -o "${opts}" -D ${datadir} -w -t 30 -m fast stop \
+         >>$LOG_DIR/$JOB_NAME.log 2>&1
     ;;
   *)
     echo "Usage: postgres_ctl {start|stop}"

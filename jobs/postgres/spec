@@ -13,6 +13,8 @@ templates:
   config/hba.conf:        config/hba.conf
   config/ident.conf:      config/ident.conf
 
+  sql/setup-replication.sql: sql/setup-replication.sql
+
 properties:
   postgres.backend:
     description: A map of postgresql.conf configuration directives, keyed by name.
@@ -24,4 +26,14 @@ properties:
 
   postgres.ident:
     description: A list of pg_ident.conf configuration entries  See Section 19.2 of the PostgreSQL manual.
+    default: []
+
+  postgres.replication.enabled:
+    description: Whether or not to enable streaming PostgreSQL replication
+    default: false
+  postgres.replication.master:
+    description: IP address of the preferred master node
+    default: ~
+  postgres.replication.pool:
+    description: List of all IP address of nodes in the replication pool (including the master)
     default: []

@@ -13,10 +13,17 @@ jobs:
     templates:
     - { release: postgres, name: postgres }
     - { release: postgres, name: pgpool }
-    instances: 1
+    instances: 3
     persistent_disk: 0
     resource_pool: small_z1
     networks: (( param "please set postgres networks" ))
+
+    properties:
+      postgres:
+        replication:
+          enabled: true
+          master: (( grab jobs.postgres.networks.postgres1.static_ips[0] ))
+          pool:   (( grab jobs.postgres.networks.postgres1.static_ips ))
 
 networks: (( param "please set networks" ))
 
