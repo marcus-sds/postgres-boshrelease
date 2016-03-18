@@ -1,0 +1,191 @@
+#!/bin/bash
+
+force() {
+  return <%= p('postgres.tuning.force') ? 0 : 1 %>
+}
+toobig() {
+  # 64-bit signed integers max out at 9,223,372,036,854,775,807,
+  # a.k.a. 9 billion billion, or 9 * 10^19.  THEREFORE if we have
+  # a string of more than 18 characters, chances are it's too big
+  # to deal with in any meaningful way.
+  #
+  test ${#1} -gt 18
+  return $?
+}
+max() {
+    if force;           then echo $1
+  elif toobig $1;       then echo $1
+  elif toobig $2;       then echo $2
+  elif [[ $1 -gt $2 ]]; then echo $1
+  else                       echo $2
+  fi
+}
+
+unit() {
+  # usage: unit $value $base $suffix
+  local value=$1
+  local base=$2
+  local units=" $3"
+  local suffix=$4
+
+  if toobig $value; then
+    echo "*unfathomable*" # warden / garden does this
+    return
+  fi
+
+  while [[ ${#units} -gt 1 && $value -gt $base ]]; do
+    value=$(( value / base ))
+    units=${units:1}
+  done
+  echo "${value} ${units:0:1}${suffix}"
+}
+
+summarize() {
+  local from=$2
+  local to=$3
+  if [[ -n $4 ]]; then
+    # called as `summarize key $a $b 1024 KMG b
+    from=$(unit $from $4 $5 $6)
+    to=$(unit $to $4 $5 $6)
+  fi
+  printf "%20s %16s -> %16s" $1 "$from" "$to"
+  if [[ "$2" = "$3" ]]; then
+    echo "  (no change)"
+  else
+    echo "  OK"
+  fi
+}
+
+#####################################
+
+
+
+
+     ######  ##     ## ##     ##
+    ##    ## ##     ## ###   ###
+    ##       ##     ## #### ####
+     ######  ######### ## ### ##
+          ## ##     ## ##     ##
+    ##    ## ##     ## ##     ##
+     ######  ##     ## ##     ##
+
+cur_shmmax=$(cat /proc/sys/kernel/shmmax)
+cur_shmall=$(cat /proc/sys/kernel/shmall)
+cur_shmmni=$(cat /proc/sys/kernel/shmmni)
+
+#####################################
+# SHMAX
+
+shmmax="<%= p('postgres.tuning.ipc.shmmax') %>"
+if [[ "${shmmax}" == "auto" || shmmax < 1024 ]]; then
+  shmmax=1024 # MINIMUM per PostgreSQL 17.1
+fi
+shmmax=$(max ${shmmax} ${cur_shmmax})
+
+#####################################
+# SHMALL
+
+shmall="<%= p('postgres.tuning.ipc.shmall') %>"
+if [[ "${shmall}" == "auto" ]]; then
+  pagesize=$(getconf PAGE_SIZE)
+  shmall=$(( (shmmax + (pagesize - 1)) / pagesize ))
+fi
+shmall=$(max ${shmall} ${cur_shmall})
+
+#####################################
+# SHMMNI
+
+shmmni="<%= p('postgres.tuning.ipc.shmmni') %>"
+if [[ "${shmmni}" == "auto" ]]; then
+  shmmni=$(cat /proc/sys/kernel/shmmni)
+fi
+shmmni=$(max ${shmmni} ${cur_shmmni})
+
+
+
+
+     ######  ######## ##     ##
+    ##    ## ##       ###   ###
+    ##       ##       #### ####
+     ######  ######   ## ### ##
+          ## ##       ##     ##
+    ##    ## ##       ##     ##
+     ######  ######## ##     ##
+
+read cur_semmsl \
+     cur_semmns \
+     cur_semopm \
+     cur_semmni \
+  < /proc/sys/kernel/sem
+
+#####################################
+# SEMMNI
+
+semmni="<%= p('postgres.tuning.ipc.semmni') %>"
+if [[ "${semmni}" == "auto" ]]; then
+  max_connections=<%= p('postgres.config.max_connections', 100) %>
+  autovac_workers=<%= p('postgres.config.autovacuum_max_workers', 3) %>
+  semmni=$(( (max_connections + autovac_workers + 3 + (16 - 1)) / 16 ))
+fi
+semmni=$(max ${semmni} ${cur_semmni})
+
+#####################################
+# SEMMNS
+
+semmns="<%= p('postgres.tuning.ipc.semmns') %>"
+if [[ "${semmns}" == "auto" ]]; then
+  max_connections=<%= p('postgres.config.max_connections', 100) %>
+  autovac_workers=<%= p('postgres.config.autovacuum_max_workers', 3) %>
+  semmns=$(( (max_connections + autovac_workers + 3 + (16 - 1)) / 16 * (17 + 3) ))
+fi
+semmns=$(max ${semmns} ${cur_semmns})
+
+#####################################
+# SEMMSL
+
+semmsl="<%= p('postgres.tuning.ipc.semmsl') %>"
+if [[ "${semmsl}" == "auto" || ${semmsl} < 17 ]]; then
+  semmsl=17 # per PostgreSQL 17.1
+fi
+semmsl=$(max ${semmsl} ${cur_semmsl})
+
+#####################################
+# SEMOPM
+
+semopm="<%= p('postgres.tuning.ipc.semopm') %>"
+if [[ "${semopm}" == "auto" ]]; then
+  semopm=500 # sane default, per Ubuntu
+fi
+semopm=$(max ${semopm} ${cur_semopm})
+
+
+
+
+echo "TUNING KERNEL PARAMETERS"
+echo
+summarize SHMMAX ${cur_shmmax} ${shmmax} 1024 KMG B
+summarize SHMALL ${cur_shmall} ${shmall} 1024 KMG B
+summarize SHMMNI ${cur_shmmni} ${shmmni} 1000 kM
+echo
+
+summarize SEMMNI ${cur_semmni} ${semmni} 1000 kM
+summarize SEMMNS ${cur_semmns} ${semmns} 1000 kM
+summarize SEMMSL ${cur_semmsl} ${semmsl} 1000 kM
+summarize SEMOPM ${cur_semopm} ${semopm} 1000 kM
+echo
+
+
+if [[ -n ${COMMIT_TUNING} ]]; then
+  echo "commiting changes to kernel configuration..."
+  echo ${shmmax} > /proc/sys/kernel/shmmax
+  echo ${shmall} > /proc/sys/kernel/shmall
+  echo ${shmmni} > /proc/sys/kernel/shmmni
+  echo ${semmsl} ${semmns} ${semopm} ${semmni} > /proc/sys/kernel/sem
+  echo "done."
+
+else
+  echo "COMMIT_TUNING env var not set; skipping actual changes to kernel configuration..."
+  echo "done (sort of)."
+fi
+
+echo

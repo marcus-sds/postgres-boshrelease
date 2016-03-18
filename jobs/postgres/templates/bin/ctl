@@ -46,6 +46,12 @@ case $1 in
   start)
     pid_guard $PIDFILE $JOB_NAME
 
+<% if p('postgres.tuning.enable') %>
+    # tune that kernel!
+    COMMIT_TUNING=1 ${JOB_DIR}/bin/tune \
+      >>$LOG_DIR/$JOB_NAME.log 2>&1
+<% end %>
+
     if [[ ! -d ${datadir} ]]; then
       (
 <% if replication && master %>

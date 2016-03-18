@@ -4,6 +4,7 @@ packages:
   - postgres
 templates:
   bin/ctl: bin/ctl
+  bin/tune: bin/tune
   bin/monit_debugger: bin/monit_debugger
   data/properties.sh.erb: data/properties.sh
   helpers/ctl_setup.sh: helpers/ctl_setup.sh
@@ -27,6 +28,45 @@ properties:
   postgres.ident:
     description: A list of pg_ident.conf configuration entries  See Section 19.2 of the PostgreSQL manual.
     default: []
+
+  postgres.tuning.enable:
+    description: Enable experimental Kernel Tuning code, utilizing values from postgres.tuning.* properties hierarchy.  THIS IS EXPERIMENTAL.
+    default: false
+  postgres.tuning.force:
+    description: Whether or not to adhere strictly to specified and/or calculated tuning values.  If set to false (the default), tuning parameters are taken as guides, usually in the form of minimums.
+    default: false
+
+  # NOTE: Neither SHMMIN nor SHMSEG are modifiable on Linux (at least not without a
+  #       kernel reconfigure / recompile) so they are not represented here.
+  #
+  postgres.tuning.ipc.shmmax:
+    description: Maximum size of shared memory segment (bytes) - at least 1kB (more if running many copies of the server).
+    default: auto
+  postgres.tuning.ipc.shmall:
+    description: Total amount of shared memory available (bytes or pages) - this should normally be left at 'auto'.
+    default: auto
+  postgres.tuning.ipc.shmmni:
+    description: Maximum number of shared memory segments system-wide - like postgres.tuning.ipc.shmseg plus room for other applications.
+    default: auto
+
+  # NOTE: Neither SEMMAP nor SEMVMX are modifiable on Linux (at least not without a
+  #       kernel reconfigure / recompile) so they are not represented here.
+  #
+  #       HOWEVER, SEMOPM *is* configurable, so even though the PostgreSQL documentation
+  #       doesn't mention it explicitly in section 17.1, it's available for tuning.
+  #
+  postgres.tuning.ipc.semmni:
+    description: Maximum number of semaphore identifiers (i.e., sets) - at least ceil((max_connections + autovacuum_max_workers + 4) / 16).
+    default: auto
+  postgres.tuning.ipc.semmns:
+    description: Maximum number of semaphores system-wide - ceil((max_connections + autovacuum_max_workers + 4) / 16) * 17 plus room for other applications.
+    default: auto
+  postgres.tuning.ipc.semmsl:
+    description: Maximum number of semaphores per set - at least 17.
+    default: 17
+  postgres.tuning.ipc.semopm:
+    description: The maximum number of operations that may be specified in a semop(2) call.
+    default: auto
 
   postgres.replication.enabled:
     description: Whether or not to enable streaming PostgreSQL replication
