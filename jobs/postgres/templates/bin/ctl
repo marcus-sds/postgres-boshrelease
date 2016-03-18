@@ -5,7 +5,7 @@ myip        = spec.networks.send(spec.networks.methods(false).first).ip
 masterip    = p('postgres.replication.master', '')
 replication = p('postgres.replication.enabled', false) && masterip != ''
 master      = replication && masterip == myip
-port        = p('postgres.config.port', 5432)
+port        = p('postgres.config.port')
 
 %>
 # first, some diagnostic info
@@ -54,7 +54,7 @@ case $1 in
           || rm -rf ${datadir}
 <% elsif replication && !master %>
         echo >&2 "[repl:slave] DATADIR (${datadir}) not found; seeding from preferred master (<%= masterip %>)"
-        chpst -u vcap:vcap pg_basebackup -h <%= masterip %> -D ${datadir} -P -U replication --xlog-method=stream -R \
+        chpst -u vcap:vcap pg_basebackup -h <%= masterip %> -p <%= port %> -D ${datadir} -P -U replication --xlog-method=stream -R \
           || rm -rf ${datadir}
 <% else %>
         echo >&2 "[standalone] DATADIR (${datadir}) not found; initializing"
@@ -70,7 +70,8 @@ case $1 in
 
 <% if replication && master %>
     echo >>$LOG_DIR/$JOB_NAME.log "[repl:master] setting up replication"
-    psql -U vcap postgres < ${JOB_DIR}/sql/setup-replication.sql \
+    psql -p <%= port %> -U vcap postgres \
+         < ${JOB_DIR}/sql/setup-replication.sql \
          >>$LOG_DIR/$JOB_NAME.log 2>&1
 <% end %>
     ;;
