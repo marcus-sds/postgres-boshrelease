@@ -1,0 +1,12 @@
+# envrc for postgres stuff
+job=postgres
+
+for bin in /var/vcap/jobs/${job}/packages/*/*bin; do
+  PATH="${PATH}:${bin}"
+done
+export $PATH
+
+for lib in /var/vcap/jobs/${job}/packages/*/*lib; do
+  LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${lib}"
+done
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH#:}
