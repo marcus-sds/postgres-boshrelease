@@ -4,6 +4,7 @@ packages:
   - pgpool2
 templates:
   bin/ctl: bin/ctl
+  bin/watcher: bin/watcher
   bin/monit_debugger: bin/monit_debugger
   data/properties.sh.erb: data/properties.sh
   helpers/ctl_setup.sh: helpers/ctl_setup.sh
@@ -11,9 +12,15 @@ templates:
   envrc: envrc
 
   config/pgpool.conf: config/pgpool.conf
+  config/pcp.conf:    config/pcp.conf
   config/hba.conf:    config/hba.conf
+  config/pcppass:     config/.pcppass
 
 properties:
+  pgpool.debug:
+    description: Enable extra debugging wherever possible.  Intended for BOSH release maintainers.
+    default: false
+
   pgpool.backend.hosts:
     description: A list of backend host / IPs to pool connections to.
     default: []
@@ -31,3 +38,8 @@ properties:
   pcp.config:
     description: A map of pcp.conf configuration directives, keyed by name.
     default: {}
+  pcp.users:
+    description: "A list of {username: ..., password: ...} objects for defining PCP users.  Passwords will be hashed before being stored on-disk."
+    default: []
+  pcp.system_password:
+    description: Password (cleartext) to use for system-level PCP access, for internal purposes like monitoring.

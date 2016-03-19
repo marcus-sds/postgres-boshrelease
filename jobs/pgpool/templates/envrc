@@ -1,5 +1,5 @@
-# envrc for postgres stuff
-job=postgres
+# envrc for pgpool stuff
+job=pgpool
 
 for bin in /var/vcap/jobs/${job}/packages/*/*bin; do
   PATH="${PATH}:${bin}"
@@ -10,3 +10,6 @@ for lib in /var/vcap/jobs/${job}/packages/*/*lib; do
   LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${lib}"
 done
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH#:}
+
+cp -a /var/vcap/jobs/${job}/config/.pcppass ~/.pcppass
+chmod 0400 ~/.pcppass

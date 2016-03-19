@@ -1,0 +1,1 @@
+localhost:<%= p('pgpool.config.pcp_port', 9898) %>:system:<%= p('pcp.system_password') %>

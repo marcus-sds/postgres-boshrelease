@@ -3,3 +3,9 @@ check process pgpool
   start program "/var/vcap/jobs/pgpool/bin/monit_debugger pgpool_ctl '/var/vcap/jobs/pgpool/bin/ctl start'"
   stop program "/var/vcap/jobs/pgpool/bin/monit_debugger pgpool_ctl '/var/vcap/jobs/pgpool/bin/ctl stop'"
   group vcap
+
+check process watcher
+  with pidfile /var/vcap/sys/run/pgpool/watcher.pid
+  start program "/var/vcap/jobs/pgpool/bin/monit_debugger pgpool_watcher '/var/vcap/jobs/pgpool/bin/watcher start'"
+  stop program "/var/vcap/jobs/pgpool/bin/monit_debugger pgpool_watcher '/var/vcap/jobs/pgpool/bin/watcher stop'"
+  group vcap

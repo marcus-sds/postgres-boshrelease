@@ -26,12 +26,18 @@ jobs:
           enabled: true
           master: (( grab jobs.postgres.networks.postgres1.static_ips[0] ))
           pool:   (( grab jobs.postgres.networks.postgres1.static_ips ))
+        hba:
+          - host all all 0.0.0.0/0 trust
       pgpool:
         backend:
           hosts: (( grab jobs.postgres.networks.postgres1.static_ips ))
           port: 6432
         config:
           port: 5432
+          enable_pool_hba: on
+        hba: (( grab jobs.postgres.properties.postgres.hba ))
+      pcp:
+        system_password: secret
 
 
 networks: (( param "please set networks" ))

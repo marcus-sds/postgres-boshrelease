@@ -6,7 +6,6 @@ set -u # report the usage of uninitialized variables
 # Setup env vars and folders for the webapp_ctl script
 source /var/vcap/jobs/pgpool/helpers/ctl_setup.sh 'pgpool'
 
-export PORT=${PORT:-5000}
 export LANG=en_US.UTF-8
 
 case $1 in
@@ -14,9 +13,15 @@ case $1 in
   start)
     pid_guard $PIDFILE $JOB_NAME
 
-    exec chpst -u vcap:vcap pgpool -n \
+    # (possiblhy) create an empty pgpool passwd authdb
+    touch ${JOB_DIR}/config/passwd
+
+    # run pgpool
+    chpst -u vcap:vcap pgpool -n <% if p('pgpool.debug') %>--debug<% end %> \
          -f ${JOB_DIR}/config/pgpool.conf \
-         >>$LOG_DIR/$JOB_NAME.log 2>&1
+         -F ${JOB_DIR}/config/pcp.conf \
+         -a ${JOB_DIR}/config/hba.conf \
+         >>$LOG_DIR/$JOB_NAME.log 2>&1 &
 
     ;;
 
