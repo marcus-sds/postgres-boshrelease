@@ -69,6 +69,10 @@ properties:
     description: The maximum number of operations that may be specified in a semop(2) call.
     default: auto
 
+  postgres.tuning.limits.fds:
+    description: The maximum number of open files (including sockets) that any given process can have.
+    default: auto
+
   postgres.replication.enabled:
     description: Whether or not to enable streaming PostgreSQL replication
     default: false
