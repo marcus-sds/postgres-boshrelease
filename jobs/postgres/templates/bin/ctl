@@ -41,11 +41,13 @@ opts="${opts} -c config_file=${JOB_DIR}/config/postgresql.conf"
 opts="${opts} -c hba_file=${JOB_DIR}/config/hba.conf"
 opts="${opts} -c ident_file=${JOB_DIR}/config/ident.conf"
 
+<% if p('postgres.tuning.enable') %>
 # set some ulimits...
 ulimit -v unlimited
 <% if p('postgres.tuning.limits.fds') != 'auto'
 %>ulimit -n <%= p('postgres.tuning.limits.fds') %>
-<% end %>
+<% end
+   end %>
 
 case $1 in
 
