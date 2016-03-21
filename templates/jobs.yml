@@ -27,8 +27,15 @@ jobs:
           master: (( grab jobs.postgres.networks.postgres1.static_ips[0] ))
           pool:   (( grab jobs.postgres.networks.postgres1.static_ips ))
         hba:
-          - host all all 0.0.0.0/0 trust
+          - host all all 0.0.0.0/0 md5
+          - host all all ::/0 md5
       pgpool:
+        debug: true
+        users:
+          - username: porcupine
+            password: quill
+          - username: hedgehog
+            password: frank
         backend:
           hosts: (( grab jobs.postgres.networks.postgres1.static_ips ))
           port: 6432
