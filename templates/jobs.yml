@@ -26,6 +26,8 @@ jobs:
           enabled: true
           master: (( grab jobs.postgres.networks.postgres1.static_ips[0] ))
           pool:   (( grab jobs.postgres.networks.postgres1.static_ips ))
+        pgpool:
+          pool:   (( grab jobs.postgres.networks.postgres1.static_ips ))
         hba:
           - host all all 0.0.0.0/0 md5
           - host all all ::/0 md5
