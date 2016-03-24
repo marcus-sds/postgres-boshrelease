@@ -16,6 +16,9 @@ jobs:
     networks:
       - name: postgres1
         static_ips: (( static_ips 0 1 2 3 4 5 6 7 8 9 ))
+  - name: smoke-tests
+    networks:
+      - name: postgres1
 
 compilation:
   cloud_properties:
