@@ -113,8 +113,8 @@ EOF
     createuser -U vcap -p <%= port %> -DRS -El <%= user['username'] %>
     createdb   -U vcap -p <%= port %>       -O <%= user['username'] %> <%= user['username'] %>
 
-    psql -p <%= port %> -U vcap postgres -c "ALTER ROLE <%= user['username'] %> WITH PASSWORD '<%= user['password'] %>'"
-    psql -p <%= port %> -U vcap postgres -c "GRANT ALL PRIVILEGES ON DATABASE <%= user['username'] %> TO <%= user['username'] %>"
+    psql -p <%= port %> -U vcap postgres -c "ALTER ROLE \"<%= user['username'] %>\" WITH PASSWORD '<%= user['password'] %>'"
+    psql -p <%= port %> -U vcap postgres -c "GRANT ALL PRIVILEGES ON DATABASE \"<%= user['username'] %>\" TO \"<%= user['username'] %>\""
 
     set +x
     echo
