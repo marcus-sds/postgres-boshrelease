@@ -67,6 +67,11 @@ echo "pgbench exited $?"
 echo
 
 
+psql -h <%= p('postgres.smoke-tests.target.address') %> \
+     -p <%= p('postgres.smoke-tests.target.port') %> \
+     -U <%= p('postgres.smoke-tests.target.username') %> \
+     --file "/var/vcap/jobs/smoke-tests/sql/pgbench_cleanup.sql"
+
 echo "---------------------------------------------"
 echo "Errand smoke-tests is complete; exit status $EXITSTATUS"
 exit $EXITSTATUS
