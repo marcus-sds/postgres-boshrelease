@@ -7,6 +7,7 @@ templates:
   bin/run: bin/run
   helpers/ctl_setup.sh: helpers/ctl_setup.sh
   helpers/ctl_utils.sh: helpers/ctl_utils.sh
+  sql/pgbench_cleanup.sql: sql/pgbench_cleanup.sql
 
 properties:
   postgres.smoke-tests.target.address:
