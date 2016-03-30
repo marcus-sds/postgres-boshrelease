@@ -1,17 +1,16 @@
 #!/bin/bash
 <%
 
-myip        = spec.networks.send(spec.networks.methods(false).first).ip
 masterip    = p('postgres.replication.master', '')
 replication = p('postgres.replication.enabled', false) && masterip != ''
-master      = replication && masterip == myip
+master      = replication && spec.index == 0
 port        = p('postgres.config.port')
 
 %>
 # first, some diagnostic info
 # ---------------------------
-#        myip | '<%= myip %>'
 #    masterip | '<%= masterip %>'
+#  spec.index | <%= spec.index %>
 #        port | <%= port %>
 # replication | <%= replication %>
 #      master | <%= master %>

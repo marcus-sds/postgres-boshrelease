@@ -77,7 +77,7 @@ properties:
     description: Whether or not to enable streaming PostgreSQL replication
     default: false
   postgres.replication.master:
-    description: IP address of the preferred master node
+    description: IP address of the preferred master node (should be the 0th postgres node's IP)
     default: ~
   postgres.replication.pool:
     description: List of all IP address of nodes in the replication pool (including the master)
