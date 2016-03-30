@@ -14,7 +14,6 @@ DO $$
 				tablename LIKE 'pgbench\_%'
 		LOOP
 			EXECUTE 'DROP TABLE ' || quote_ident(row.schemaname) || '.' || quote_ident(row.tablename);
-			RAISE INFO 'Dropped table: %', quote_ident(row.schemaname) || '.' || quote_ident(row.tablename);
 		END LOOP;
 	END $$
 LANGUAGE plpgsql;

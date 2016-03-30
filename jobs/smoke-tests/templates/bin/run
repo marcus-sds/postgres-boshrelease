@@ -59,8 +59,7 @@ done
 echo
 echo "done with tests; waiting for pgbench to finish up"
 echo
-
-wait
+wait $PGBENCH
 
 echo
 echo "pgbench exited $?"
