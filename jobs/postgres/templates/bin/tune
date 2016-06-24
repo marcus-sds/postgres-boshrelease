@@ -1,7 +1,7 @@
 #!/bin/bash
 
 force() {
-  return <%= p('postgres.tuning.force') ? 0 : 1 %>
+  return <%= p('tuning.force') ? 0 : 1 %>
 }
 toobig() {
   # 64-bit signed integers max out at 9,223,372,036,854,775,807,
@@ -76,7 +76,7 @@ cur_shmmni=$(cat /proc/sys/kernel/shmmni)
 #####################################
 # SHMAX
 
-shmmax="<%= p('postgres.tuning.ipc.shmmax') %>"
+shmmax="<%= p('tuning.ipc.shmmax') %>"
 if [[ "${shmmax}" == "auto" || shmmax < 1024 ]]; then
   shmmax=1024 # MINIMUM per PostgreSQL 17.1
 fi
@@ -85,7 +85,7 @@ shmmax=$(max ${shmmax} ${cur_shmmax})
 #####################################
 # SHMALL
 
-shmall="<%= p('postgres.tuning.ipc.shmall') %>"
+shmall="<%= p('tuning.ipc.shmall') %>"
 if [[ "${shmall}" == "auto" ]]; then
   pagesize=$(getconf PAGE_SIZE)
   shmall=$(( (shmmax + (pagesize - 1)) / pagesize ))
@@ -95,7 +95,7 @@ shmall=$(max ${shmall} ${cur_shmall})
 #####################################
 # SHMMNI
 
-shmmni="<%= p('postgres.tuning.ipc.shmmni') %>"
+shmmni="<%= p('tuning.ipc.shmmni') %>"
 if [[ "${shmmni}" == "auto" ]]; then
   shmmni=$(cat /proc/sys/kernel/shmmni)
 fi
@@ -121,10 +121,10 @@ read cur_semmsl \
 #####################################
 # SEMMNI
 
-semmni="<%= p('postgres.tuning.ipc.semmni') %>"
+semmni="<%= p('tuning.ipc.semmni') %>"
 if [[ "${semmni}" == "auto" ]]; then
-  max_connections=<%= p('postgres.config.max_connections', 100) %>
-  autovac_workers=<%= p('postgres.config.autovacuum_max_workers', 3) %>
+  max_connections=<%= p('config.max_connections', 100) %>
+  autovac_workers=<%= p('config.autovacuum_max_workers', 3) %>
   semmni=$(( (max_connections + autovac_workers + 3 + (16 - 1)) / 16 ))
 fi
 semmni=$(max ${semmni} ${cur_semmni})
@@ -132,10 +132,10 @@ semmni=$(max ${semmni} ${cur_semmni})
 #####################################
 # SEMMNS
 
-semmns="<%= p('postgres.tuning.ipc.semmns') %>"
+semmns="<%= p('tuning.ipc.semmns') %>"
 if [[ "${semmns}" == "auto" ]]; then
-  max_connections=<%= p('postgres.config.max_connections', 100) %>
-  autovac_workers=<%= p('postgres.config.autovacuum_max_workers', 3) %>
+  max_connections=<%= p('config.max_connections', 100) %>
+  autovac_workers=<%= p('config.autovacuum_max_workers', 3) %>
   semmns=$(( (max_connections + autovac_workers + 3 + (16 - 1)) / 16 * (17 + 3) ))
 fi
 semmns=$(max ${semmns} ${cur_semmns})
@@ -143,7 +143,7 @@ semmns=$(max ${semmns} ${cur_semmns})
 #####################################
 # SEMMSL
 
-semmsl="<%= p('postgres.tuning.ipc.semmsl') %>"
+semmsl="<%= p('tuning.ipc.semmsl') %>"
 if [[ "${semmsl}" == "auto" || ${semmsl} < 17 ]]; then
   semmsl=17 # per PostgreSQL 17.1
 fi
@@ -152,7 +152,7 @@ semmsl=$(max ${semmsl} ${cur_semmsl})
 #####################################
 # SEMOPM
 
-semopm="<%= p('postgres.tuning.ipc.semopm') %>"
+semopm="<%= p('tuning.ipc.semopm') %>"
 if [[ "${semopm}" == "auto" ]]; then
   semopm=500 # sane default, per Ubuntu
 fi

@@ -1,10 +1,10 @@
 #!/bin/bash
 <%
 
-masterip    = p('postgres.replication.master', '')
-replication = p('postgres.replication.enabled', false) && masterip != ''
+masterip    = link("db").instances[0].address
+replication = p('replication.enabled', false) && masterip != ''
 master      = replication && spec.index == 0
-port        = p('postgres.config.port')
+port        = p('config.port')
 
 %>
 # first, some diagnostic info
@@ -40,11 +40,11 @@ opts="${opts} -c config_file=${JOB_DIR}/config/postgresql.conf"
 opts="${opts} -c hba_file=${JOB_DIR}/config/hba.conf"
 opts="${opts} -c ident_file=${JOB_DIR}/config/ident.conf"
 
-<% if p('postgres.tuning.enable') %>
+<% if p('tuning.enable') %>
 # set some ulimits...
 ulimit -v unlimited
-<% if p('postgres.tuning.limits.fds') != 'auto'
-%>ulimit -n <%= p('postgres.tuning.limits.fds') %>
+<% if p('tuning.limits.fds') != 'auto'
+%>ulimit -n <%= p('tuning.limits.fds') %>
 <% end
    end %>
 
@@ -53,7 +53,7 @@ case $1 in
   start)
     pid_guard $PIDFILE $JOB_NAME
 
-<% if p('postgres.tuning.enable') %>
+<% if p('tuning.enable') %>
     # tune that kernel!
     COMMIT_TUNING=1 ${JOB_DIR}/bin/tune \
       >>$LOG_DIR/$JOB_NAME.log 2>&1

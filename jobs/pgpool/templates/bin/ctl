@@ -17,7 +17,7 @@ case $1 in
     touch ${JOB_DIR}/config/passwd
 
     # run pgpool
-    chpst -u vcap:vcap pgpool -n <% if p('pgpool.debug') %>--debug<% end %> \
+    chpst -u vcap:vcap pgpool -n <% if p('debug') %>--debug<% end %> \
          -f ${JOB_DIR}/config/pgpool.conf \
          -F ${JOB_DIR}/config/pcp.conf \
          -a ${JOB_DIR}/config/hba.conf \
