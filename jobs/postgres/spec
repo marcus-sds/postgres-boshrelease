@@ -89,3 +89,14 @@ properties:
   pgpool.users:
     description: "A list of {username: ..., password: ...} objects for defining pgpool users"
     default: []
+
+  pgpool.databases:
+    description: A list of databases to create in Postgres.
+    default: []
+    example: |
+      pgpool:
+        databases:
+          - name: animals
+            users:
+              - porcupine
+              - hedgehog
