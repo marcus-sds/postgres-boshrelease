@@ -33,6 +33,11 @@ jobs:
           - host all all ::/0 md5
       pgpool:
         debug: true
+        databases:
+          - name: animals
+            users:
+              - porcupine
+              - hedgehog
         users:
           - username: porcupine
             password: quill
