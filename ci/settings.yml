@@ -1,6 +1,6 @@
 ---
 meta:
-  name:    postgres-boshrelease
+  name:    postgres
   release: PostgreSQL
   target:  sw
   url:     https://ci.vsphere.starkandwayne.com
