@@ -100,3 +100,5 @@ properties:
             users:
               - porcupine
               - hedgehog
+            extensions: # optional aray of extensions to enable on this database
+            - citext

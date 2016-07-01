@@ -124,11 +124,17 @@ EOF
     echo >>$LOG_DIR/$JOB_NAME.log "[postgres] setting up database <%= database['name'] %>"
     set -x
 
-    createdb   -U vcap -p <%= port %>       -O vcap <%= database['name'] %> 
-
+    createdb   -U vcap -p <%= port %>       -O vcap <%= database['name'] %>
     <% database['users'].each do |user| %>
     psql -p <%= port %> -U vcap postgres -c "GRANT ALL PRIVILEGES ON DATABASE \"<%= database['name'] %>\" TO \"<%= user %>\""
     <% end %>
+
+    <% if database["extensions"]
+         database["extensions"].each do |ext| %>
+         echo "Trying to install <%= ext %>..."
+         psql -p <%= port %> -U vcap "<%= database['name'] %>" -c "CREATE EXTENSION IF NOT EXISTS <%= ext %>"
+    <%   end
+      end %>
 
     set +x
     echo
