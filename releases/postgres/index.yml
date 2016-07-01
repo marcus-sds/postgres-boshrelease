@@ -2,6 +2,4 @@
 builds:
   3c8040ef-3e65-4ff9-a17f-a1cde644a2d5:
     version: 1.0.0
-  61d354c8-d865-4d39-a8b3-acdc0cf253ff:
-    version: 1.0.2
 format-version: '2'
