@@ -38,6 +38,9 @@ jobs:
             users:
               - porcupine
               - hedgehog
+            extensions:
+            - citext
+            - pgcypto
         users:
           - username: porcupine
             password: quill

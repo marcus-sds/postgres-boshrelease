@@ -13,5 +13,5 @@ VERSION=9.5.1
 tar -xjf postgres/postgresql-${VERSION}.tar.bz2
 cd postgresql-${VERSION}/
 ./configure --prefix ${BOSH_INSTALL_TARGET}
-make
-make install
+make world
+make install-world
