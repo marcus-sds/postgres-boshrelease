@@ -1,0 +1,39 @@
+---
+packages:
+- name: pgrt
+  version: dafda7c29675f507adc4effbee68094c3d5dabce
+  fingerprint: dafda7c29675f507adc4effbee68094c3d5dabce
+  sha1: fadd380592639abf60204e71210b85e66e0dbd53
+  dependencies: []
+- name: pgpool2
+  version: 19c016a7cdcaaa93c40e4bbb936f454a1b26ddac
+  fingerprint: 19c016a7cdcaaa93c40e4bbb936f454a1b26ddac
+  sha1: ed1d3ee8879106c56a615b80bf145fe2a240ec31
+  dependencies:
+  - postgres
+- name: postgres
+  version: a9ef943bde149989a4f5077a14ed16b5b1b29100
+  fingerprint: a9ef943bde149989a4f5077a14ed16b5b1b29100
+  sha1: 03645d7cac757e492dbea3599d9cfd2d8c7592dd
+  dependencies: []
+jobs:
+- name: pgpool
+  version: 232e1d6a1d504df42c31c34c845c65c79e7cb38c
+  fingerprint: 232e1d6a1d504df42c31c34c845c65c79e7cb38c
+  sha1: a8e1020712f0885e4187db3d9ee932d342a28cf8
+- name: postgres
+  version: 6fc4ada1355fd55e6c5c095086492aa93526b1e7
+  fingerprint: 6fc4ada1355fd55e6c5c095086492aa93526b1e7
+  sha1: 3a282cf7abc7211cc6141dbfcbb7b5b5eca028fa
+- name: smoke-tests
+  version: a73a6108927abdadff05042a5df17916f18a9090
+  fingerprint: a73a6108927abdadff05042a5df17916f18a9090
+  sha1: 928187a4409cec9f5681c034e921e81a554a40b5
+license:
+  version: f0f6caa3fde87a6d14a5faaf366b31155ccf78a0
+  fingerprint: f0f6caa3fde87a6d14a5faaf366b31155ccf78a0
+  sha1: 1cf953bbf657fc5bfb8bdc14f401435e25ed1665
+commit_hash: 71dfd61b
+uncommitted_changes: true
+name: postgres
+version: 1.0.3
