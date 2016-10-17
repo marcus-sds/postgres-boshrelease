@@ -93,7 +93,7 @@ properties:
     default: ~
 
   pgpool.users:
-    description: "A list of {username: ..., password: ...} objects for defining pgpool users"
+    description: "A list of {username: ..., password: ...} objects for defining pgpool users.  Setting the 'admin:' key on a user will make them a superuser."
     default: []
 
   pgpool.databases:

@@ -42,6 +42,7 @@ jobs:
             password: quill
           - username: hedgehog
             password: frank
+            admin:    true
           - username: smoke-tests
             password: if-ya-got-em
         backend:

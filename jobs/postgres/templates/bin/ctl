@@ -109,7 +109,7 @@ EOF
     echo "[$(date)] setting up user <%= user['username'] %>"
     set -x
 
-    createuser -U vcap -p <%= port %> -DRS -El <%= user['username'] %>
+    createuser -U vcap -p <%= port %> <% if user['admin'] %>-drs<% else %>-DRS<% end %> -El <%= user['username'] %>
     createdb   -U vcap -p <%= port %>       -O <%= user['username'] %> <%= user['username'] %>
 
     psql -p <%= port %> -U vcap postgres -c "ALTER ROLE \"<%= user['username'] %>\" WITH PASSWORD '<%= user['password'] %>'"
