@@ -1,5 +1,5 @@
-set -e # exit immediately if a simple command exits with a non-zero status
-set -u # report the usage of uninitialized variables
+#!/bin/bash
+set -eu
 
 # Detect # of CPUs so make jobs can be parallelized
 CPUS=$(grep -c ^processor /proc/cpuinfo)
@@ -12,6 +12,20 @@ export HOME=/var/vcap
 VERSION=9.5.1
 tar -xjf postgres/postgresql-${VERSION}.tar.bz2
 cd postgresql-${VERSION}/
+patch -p1 <<EOF
+diff -u -ur postgresql-9.5.1.pristine/src/include/pg_config_manual.h postgresql-9.5.1/src/include/pg_config_manual.h
+--- postgresql-9.5.1.pristine/src/include/pg_config_manual.h	2016-02-08 16:12:28.000000000 -0500
++++ postgresql-9.5.1/src/include/pg_config_manual.h	2016-11-01 22:21:21.000000000 -0400
+@@ -169,7 +169,7 @@
+  * here's where to twiddle it.  You can also override this at runtime
+  * with the postmaster's -k switch.
+  */
+-#define DEFAULT_PGSOCKET_DIR  "/tmp"
++#define DEFAULT_PGSOCKET_DIR  "/var/vcap/sys/run/postgres"
+ 
+ /*
+  * This is the default event source for Windows event log.
+EOF
 ./configure --prefix ${BOSH_INSTALL_TARGET}
 make world
 make install-world
