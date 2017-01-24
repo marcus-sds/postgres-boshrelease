@@ -6,3 +6,6 @@
 
 - All UNIX domain sockets now reside under `/var/vcap/sys/run`,
   where they ought to, and not in `/tmp`.
+
+- Admin accounts can now be created via the `admin` property
+  on entries in `pgpool.users`.
