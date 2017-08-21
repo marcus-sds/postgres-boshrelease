@@ -1,0 +1,94 @@
+name: postgres
+
+instance_groups:
+  - name: postgres
+    azs: [z1, z2, z3]
+    instances: 2
+    vm_type: default
+    stemcell: default
+    persistent_disk_type: 1GB
+    networks: [{name: default}]
+    jobs:
+    - release: postgres
+      name: postgres
+      properties:
+        postgres:
+          config:
+            port: 6432
+          replication:
+            enabled: true
+          hba:
+            - host all all 0.0.0.0/0 md5
+            - host all all ::/0 md5
+        pgpool:
+          databases:
+            - name: animals
+              users:
+                - porcupine
+                - hedgehog
+              extensions:
+              - citext
+              - pgcypto
+          users:
+            - username: admin
+              password: ((db-admin-password))
+              admin:    true
+            - username: user
+              password: ((db-user-password))
+    - release: postgres
+      name: pgpool
+      properties:
+        pgpool:
+          debug: true
+          backend:
+            port: 6432
+          config:
+            port: 5432
+            enable_pool_hba: off
+        pcp:
+          system_password: secret
+
+  - name: smoke-tests
+    lifecycle: errand
+    azs: [z1]
+    instances: 1
+    vm_type: default
+    stemcell: default
+    networks: [{name: default}]
+
+    jobs:
+      - release: postgres
+        name: smoke-tests
+        properties:
+          postgres:
+            smoke-tests:
+              target:
+                port:     5432
+                username: user
+                password: ((db-user-password))
+              backend:
+                port:     6432
+
+variables:
+- name: db-admin-password
+  type: password
+- name: db-user-password
+  type: password
+
+update:
+  canaries: 1
+  max_in_flight: 50
+  canary_watch_time: 1000-30000
+  update_watch_time: 1000-30000
+  serial: false
+
+stemcells:
+- alias: default
+  os: ubuntu-trusty
+  version: latest
+
+releases:
+- name: postgres
+  version: 1.1.0
+  url: https://github.com/cloudfoundry-community/postgres-boshrelease/releases/download/v1.1.0/postgres-1.1.0.tgz
+  sha1:
