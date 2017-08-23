@@ -3,7 +3,7 @@ meta:
   name:    postgres
   target:  sw
   url:     https://ci.starkandwayne.com
-  test-errands: smoke-tests
+  # test-errands: smoke-tests
 
   initial_version: 1.0.0
 
