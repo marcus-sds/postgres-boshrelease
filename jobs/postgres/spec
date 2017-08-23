@@ -33,7 +33,8 @@ consumes:
 properties:
   postgres.config:
     description: A map of postgresql.conf configuration directives, keyed by name.
-    default: {}
+    default:
+      port: 6432
 
   postgres.hba:
     description: A list of pg_hba.conf configuration acls.  See Section 19.1 of the PostgreSQL manual.

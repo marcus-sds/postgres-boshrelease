@@ -4,7 +4,7 @@
 masterip    = link("db").instances.first.address
 replication = p('postgres.replication.enabled', false) && masterip != ''
 master      = replication && spec.index == 0
-port        = p('postgres.config.port')
+port        = p('postgres.config')["port"] || 6432
 
 %>
 # first, some diagnostic info
@@ -107,8 +107,8 @@ EOF
 <% p('pgpool.users', []).each do |user| %>
     echo >>$LOG_DIR/$JOB_NAME.log "[postgres] setting up user <%= user['username'] %>"
     echo "[$(date)] setting up user <%= user['username'] %>"
-    <% admin = '-DRS' %> 
-    <% admin = '-drs' if user["admin"] %>     
+    <% admin = '-DRS' %>
+    <% admin = '-drs' if user["admin"] %>
     set -x
 
     createuser -U vcap -p <%= port %> <%=admin %> -El <%= user['username'] %>
