@@ -21,7 +21,7 @@ provides:
 - name: db
   type: postgresql
   properties:
-  - postgres.config.port
+  - postgres.config
   - pgpool.users
 
 consumes:
