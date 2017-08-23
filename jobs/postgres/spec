@@ -23,6 +23,7 @@ provides:
   properties:
   - postgres.config
   - pgpool.users
+  - pgpool.databases
 
 consumes:
 - name: db
