@@ -3,4 +3,5 @@ name: pgpool2
 dependencies:
   - postgres
 files:
-  - pgpool2/pgpool-II-*.tar.gz
+  - pgpool2/pgpool-II-3.7.4.tar.gz
+

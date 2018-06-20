@@ -1,0 +1,2 @@
+#!/bin/bash -x
+/var/vcap/packages/postgres/bin/pg_ctl promote -D /var/vcap/store/postgres/db/

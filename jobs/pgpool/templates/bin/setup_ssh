@@ -1,0 +1,22 @@
+#!/bin/bash
+set -xeu
+
+KEY="<%= p('pgpool.ssh_key') %>"
+PUB=$(ssh-keygen -yf /dev/stdin <<<"$KEY")
+
+if $(cat ~/.ssh/authorized_keys | grep "$PUB" || false); then
+  echo "We've already deployed"
+else
+  echo "Adding SSH key to auth_key"
+  mkdir -p ~/.ssh && cd ~/.ssh
+  echo "$PUB" >> authorized_keys
+  chmod 700 ~/.ssh
+  chmod 600 ~/.ssh/authorized_keys
+  mkdir -p /var/vcap/store/postgres
+  cd /var/vcap/store/postgres
+  echo "$KEY" > id_rsa
+  chmod 600 id_rsa
+  ssh-keygen -yf id_rsa > id_rsa.pub
+  chmod 600 id_rsa.pub
+  exit 0;
+fi

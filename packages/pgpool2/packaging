@@ -10,28 +10,30 @@ export HOME=/var/vcap
 
 
 # see http://www.pgpool.net/download.php?f=pgpool-II-3.5.0.tar.gz
-VERSION=3.5.4
+VERSION=3.7.4
 
 tar -xzf pgpool2/pgpool-II-${VERSION}.tar.gz
 cd pgpool-II-${VERSION}/
 # patch it up, since there isn't much in the way of configure options....
 patch -p1 <<EOF
-diff -u -ur pgpool-II-3.5.4.pristine/src/include/parser/pg_config_manual.h pgpool-II-3.5.4/src/include/parser/pg_config_manual.h
---- pgpool-II-3.5.4.pristine/src/include/parser/pg_config_manual.h	2016-08-30 05:04:13.000000000 -0400
-+++ pgpool-II-3.5.4/src/include/parser/pg_config_manual.h	2016-11-01 22:12:34.000000000 -0400
-@@ -189,7 +189,7 @@
+diff --git a/src/include/parser/pg_config_manual.h b/src/include/parser/pg_config_manual.h
+index bac8023e..0689d085 100644
+--- a/src/include/parser/pg_config_manual.h
++++ b/src/include/parser/pg_config_manual.h
+@@ -208,7 +208,7 @@
   * here's where to twiddle it.  You can also override this at runtime
   * with the postmaster's -k switch.
   */
 -#define DEFAULT_PGSOCKET_DIR  "/tmp"
-+#define DEFAULT_PGSOCKET_DIR  "/var/vcap/sys/run/postgres"
++#define DEFAULT_PGSOCKET_DIR "/var/vcap/sys/run/postgres"
  
  /*
   * This is the default event source for Windows event log.
-diff -u -ur pgpool-II-3.5.4.pristine/src/include/pcp/pcp_stream.h pgpool-II-3.5.4/src/include/pcp/pcp_stream.h
---- a/src/include/pcp/pcp_stream.h	2016-08-30 05:04:13.000000000 -0400
-+++ b/src/include/pcp/pcp_stream.h	2016-11-01 22:11:45.000000000 -0400
-@@ -48,6 +48,6 @@
+diff --git a/src/include/pcp/pcp_stream.h b/src/include/pcp/pcp_stream.h
+index 254b98cb..52df6ce1 100644
+--- a/src/include/pcp/pcp_stream.h
++++ b/src/include/pcp/pcp_stream.h
+@@ -48,6 +48,6 @@ extern int pcp_read(PCP_CONNECTION *pc, void *buf, int len);
  extern int pcp_write(PCP_CONNECTION *pc, void *buf, int len);
  extern int pcp_flush(PCP_CONNECTION *pc);
  
@@ -39,9 +41,10 @@ diff -u -ur pgpool-II-3.5.4.pristine/src/include/pcp/pcp_stream.h pgpool-II-3.5.
 +#define UNIX_DOMAIN_PATH "/var/vcap/sys/run/pgpool"
  
  #endif /* PCP_STREAM_H */
-diff -u -ur pgpool-II-3.5.4.pristine/src/include/pool.h pgpool-II-3.5.4/src/include/pool.h
---- a/src/include/pool.h	2016-08-30 05:17:56.000000000 -0400
-+++ b/src/include/pool.h	2016-11-01 22:10:17.000000000 -0400
+diff --git a/src/include/pool.h b/src/include/pool.h
+index f87995cd..dcf74aa0 100644
+--- a/src/include/pool.h
++++ b/src/include/pool.h
 @@ -72,16 +72,16 @@
  #define HBA_CONF_FILE_NAME "pool_hba.conf"
  
@@ -63,6 +66,7 @@ diff -u -ur pgpool-II-3.5.4.pristine/src/include/pool.h pgpool-II-3.5.4/src/incl
  
  /* status file name */
  #define STATUS_FILE_NAME "pgpool_status"
+
 EOF
 ./configure --prefix ${BOSH_INSTALL_TARGET} --with-pgsql=/var/vcap/packages/postgres
 make

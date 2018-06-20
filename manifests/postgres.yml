@@ -92,3 +92,7 @@ releases:
   version: 2.0.0
   url: https://github.com/cloudfoundry-community/postgres-boshrelease/releases/download/v2.0.0/postgres-2.0.0.tgz
   sha1: dea5cad517c62afaf97a1b31df41ad691928d960
+- name: haproxy
+  version: 8.7.0
+  url: https://github.com/cloudfoundry-incubator/haproxy-boshrelease/releases/download/v8.7.0/haproxy-8.7.0.tgz
+  sha1: 7898c1894c4b3254aa4a0ade0a02d33cf6c5c59a

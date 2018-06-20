@@ -1,0 +1,116 @@
+---
+instance_groups:
+- azs:
+  - z1
+  name: haproxy
+  instances: 2
+  vm_type: default
+  stemcell: default
+  networks: [{name: blacksmith}]
+  jobs:
+
+- azs:
+  - z1
+  instances: 2
+  jobs:
+  - name: haproxy
+    release: haproxy
+    properties:
+      ha_proxy:
+        tcp:
+        - name: postgres
+          port: 5432
+          backend_servers:
+          - 10.200.200.134
+          - 10.200.200.133
+          backend_port: 5432
+  - name: keepalived
+    release:  haproxy
+    properties:
+      keepalived:
+        vip: 10.200.200.254
+        healthcheck_name: whoguardstheguards
+  - name: postgres
+    properties:
+      pgpool:
+        databases:
+        - extensions:
+          - citext
+          - pgcypto
+          name: animals
+          users:
+          - cloudfoundry
+        users: &users
+        - admin: true
+          password: test
+          username: cloudfoundry
+      postgres:
+        config:
+          port: 6432
+        hba:
+        - host all all 0.0.0.0/0 md5
+        - host all all ::/0 md5
+        replication:
+          enabled: true
+    release: postgres
+  - name: pgpool
+    properties:
+      pcp:
+        system_password: secret
+      pgpool:
+        users: *users
+        backend:
+          port: 7432
+        config:
+          enable_pool_hba: false
+          port: 6432
+        debug: true
+    release: postgres
+  name: postgres
+  networks:
+  - name: blacksmith
+  persistent_disk_type: default
+  stemcell: default
+  vm_type: default
+- azs:
+  - z1
+  instances: 1
+  jobs:
+  - name: smoke-tests
+    properties:
+      postgres:
+        smoke-tests:
+          backend:
+            port: 7432
+          target:
+            password: test
+            port: 5432
+            username: user
+    release: postgres
+  lifecycle: errand
+  name: smoke-tests
+  networks:
+  - name: blacksmith
+  stemcell: default
+  vm_type: default
+name: postgres
+releases:
+- name: postgres
+  sha1: dea5cad517c62afaf97a1b31df41ad691928d960
+  url: https://github.com/cloudfoundry-community/postgres-boshrelease/releases/download/v2.0.0/postgres-2.0.0.tgz
+  version: 2.0.0
+- name: haproxy
+  version: 8.7.0
+  url: https://github.com/cloudfoundry-incubator/haproxy-boshrelease/releases/download/v8.7.0/haproxy-8.7.0.tgz
+  sha1: 7898c1894c4b3254aa4a0ade0a02d33cf6c5c59a  
+
+stemcells:
+- alias: default
+  os: ubuntu-trusty
+  version: '3468.latest'
+update:
+  canaries: 1
+  canary_watch_time: 1000-30000
+  max_in_flight: 50
+  serial: false
+  update_watch_time: 1000-30000
