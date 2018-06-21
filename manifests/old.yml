@@ -49,10 +49,10 @@ instance_groups:
           name: ccdb
           users:
           - cloudfoundry
-      users:
-      - admin: true
-        password: test
-        username: cloudfoundry
+        users: &users
+        - admin: true
+          password: test
+          username: cloudfoundry
       postgres:
         config:
           port: 6432
@@ -93,6 +93,7 @@ instance_groups:
           7iQ9oqxt9vITgNcK2Ovr4//gtHzs5mdRvZ9lMtJ0xGfuHJDI9NpxbmPv04lsR/pj
           ry/fDqYhLP36MPm4OW9C3zFDZPxxthAIDUIdRzWr5/iG1I+Dur+X
           -----END RSA PRIVATE KEY-----
+        users: *users
       pcp:
         system_password: secret
         backend:
@@ -101,10 +102,6 @@ instance_groups:
           enable_pool_hba: false
           port: 5432
         debug: true
-        users:
-        - admin: true
-          password: test
-          username: cloudfoundry
     release: postgres
   name: postgres
   networks:

@@ -1,10 +1,12 @@
 #!/bin/bash
+set -eu
 <%
 
 masterip    = link("db").instances.first.address
 replication = p('postgres.replication.enabled', false) && masterip != ''
 master      = replication && spec.index == 0
 port        = p('postgres.config')["port"] || 6432
+facility    = replication ? (master ? 'repl:master' : 'repl:slave') : 'standalone'
 
 %>
 # first, some diagnostic info
@@ -16,19 +18,26 @@ port        = p('postgres.config')["port"] || 6432
 #      master | <%= master %>
 #
 
-set -e # exit immediately if a simple command exits with a non-zero status
-set -u # report the usage of uninitialized variables
-
 # Setup env vars and folders for the webapp_ctl script
 source /var/vcap/jobs/postgres/helpers/ctl_setup.sh 'postgres'
+exec >>$LOG_DIR/$JOB_NAME.log 2>&1
 
 export PORT=${PORT:-5000}
 export LANG=en_US.UTF-8
 
+# locksdir is where this BOSH release will store lock files,
+# used to keep things in sync as we spin up all the components
+# (postgres, pgpool, haproxy) in a fully-replicated setup
+locksdir=/var/vcap/sys/run/postgres/locks
+mkdir -p ${locksdir}
 
 # datadir is where PostgreSQL will store the database files.  This really
 # *shouuld* be a persistent disk, unless you know what you are doing.
 datadir=/var/vcap/store/postgres/db
+
+# we remove the postgresql.conf file, since we will determine at runtime
+# which configuration (pg-master or pg-replica) to institute.
+rm -f ${JOB_DIR}/config/postgresql.conf
 
 # construct the list of options to pass to pg_ctl.  These mostly get passed
 # onto the `postgres` process on startup, but the `-p` flag is used by the
@@ -48,46 +57,57 @@ ulimit -v unlimited
 <% end
    end %>
 
-case $1 in
+configure_as() {
+  as=${1:?configure_as() needs a role to confiure as}
+  echo >&2 "[<%= facility %>] configuring this postgres as a ${as} instance"
+  ln -sf ${JOB_DIR}/config/pg-${as}.conf \
+         ${JOB_DIR}/config/postgresql.conf
+  chown -R vcap:vcap ${JOB_DIR}/config
+}
 
-  start)
-    pid_guard $PIDFILE $JOB_NAME
-
-<% if p('postgres.tuning.enable') %>
-    # tune that kernel!
-    COMMIT_TUNING=1 ${JOB_DIR}/bin/tune \
-      >>$LOG_DIR/$JOB_NAME.log 2>&1
-<% end %>
-
-    if [[ ! -d ${datadir} ]]; then
-      (
-<% if replication && master %>
-        echo >&2 "[repl:master] DATADIR (${datadir}) not found; initializing"
-        chpst -u vcap:vcap pg_ctl -D ${datadir} initdb \
-          || rm -rf ${datadir}
-<% elsif replication && !master %>
-        echo >&2 "[repl:slave] DATADIR (${datadir}) not found; seeding from preferred master (<%= masterip %>)"
-        chpst -u vcap:vcap pg_basebackup -h <%= masterip %> -p <%= port %> -D ${datadir} -P -U replication --xlog-method=stream -R \
-          || rm -rf ${datadir}
+#
+# Bootstrap a new postgres installation, where we may not
+# have a data directory (usually, we don't).  This is the
+# only time we honor masterip and the BOSH configuration
+# as far as who is master, because we have no prior state.
+#
+bootstrap_postgres() {
+  echo >&2 "[<%= facility %>] bootstrapping this postgres instance"
+  # choose your configuration!
+<% if !replication || master %>
+  configure_as master
 <% else %>
-        echo >&2 "[standalone] DATADIR (${datadir}) not found; initializing"
-        chpst -u vcap:vcap pg_ctl -D ${datadir} initdb \
-          || rm -rf ${datadir}
+  configure_as replica
 <% end %>
-      ) >>$LOG_DIR/$JOB_NAME.log 2>&1
-    fi
 
-    # run postgres!
-    chpst -u vcap:vcap pg_ctl -o "${opts}" -D ${datadir} -w -t 30 start \
-         >>$LOG_DIR/$JOB_NAME.log 2>&1
-
+  # do we need to init the database (as a replica or a master)?
+  if [[ ! -d ${datadir} ]]; then
 <% if replication && master %>
-    echo >>$LOG_DIR/$JOB_NAME.log "[repl:master] setting up replication"
-    psql -p <%= port %> -U vcap postgres \
-         < ${JOB_DIR}/sql/setup-replication.sql \
-         >>$LOG_DIR/$JOB_NAME.log 2>&1
+    echo >&2 "[<%= facility %>] DATADIR (${datadir}) not found; initializing"
+    chpst -u vcap:vcap pg_ctl -D ${datadir} initdb \
+      || rm -rf ${datadir}
+<% elsif replication && !master %>
+    echo >&2 "[<%= facility %>] DATADIR (${datadir}) not found; seeding from preferred master (<%= masterip %>)"
+    recover_postgres <%= masterip %>
+<% else %>
+    echo >&2 "[<%= facility %>] DATADIR (${datadir}) not found; initializing"
+    chpst -u vcap:vcap pg_ctl -D ${datadir} initdb \
+      || rm -rf ${datadir}
 <% end %>
+  fi
+}
 
+start_postgres() {
+  echo >&2 "[<%= facility %>] setting up location for WAL archives"
+  mkdir -p ${datadir}/archive
+  chown -R vcap:vcap ${datadir}/archive
+
+  echo >&2 "[<%= facility %>] starting postgres..."
+  chpst -u vcap:vcap pg_ctl -o "${opts}" -D ${datadir} -w -t 30 start
+}
+
+populate_postgres() {
+  echo >&2 "[<%= facility %>] populating postgres instance with users and databases..."
 (set +e
     cat <<EOF
 -----------------------------------------------------------------
@@ -144,14 +164,113 @@ EOF
 <% end %>
 
 )>$LOG_DIR/user-creation.log 2>&1
+}
+
+setup_replication() {
+<% if replication && master %>
+  echo "[<%= facility %>] setting up replication"
+  psql -p <%= port %> -U vcap postgres \
+       < ${JOB_DIR}/sql/setup-replication.sql
+<% end %>
+  return
+}
+
+MASTER_IP=
+wait_for_master() {
+  <% if replication %>
+  echo >&2 "[<%= facility %>] looking for an existing postgres master node..."
+  # loop through our peer IPs, and attempt to connect to them on pg ports
+  # FIXME: put a timeout loop on these
+  for x in $(seq 1 <%= p('postgres.replication.grace') %>); do
+    <% link("db").instances.reject { |the| the.address == spec.address }.each do |peer| %>
+    echo "[<%= facility %>] checking to see if <%= peer.address %>:<%= port %> is a master..."
+    count=$(echo $(psql -h <%= peer.address %> -p <%= port %> -U replication postgres \
+                        -t -c "SELECT COUNT(*) FROM pg_settings WHERE name = 'hot_standby' AND setting = 'on'"))
+    if [[ "$count" == "0" ]]; then
+      echo "[<%= facility %>] master is <%= peer.address %>"
+      MASTER_IP=<%= peer.address %>
+      return
+    fi
+    <% end %>
+
+    sleep 1
+  done
+  <% else %>
+  MASTER_IP=
+  <% end %>
+  return
+}
+
+recover_postgres() {
+  from=${1:?recover_postgres() needs the IP address of the master to recover from}
+  echo >&2 "[<%= facility %>] recovering as a replica of ${from}"
+
+  echo >&2 "[<%= facility %>] removing existing datadir (if any) in ${datadir}"
+  rm -rf ${datadir}
+  mkdir -p ${datadir} -m 0700
+  chown vcap:vcap ${datadir}
+
+  echo >&2 "[<%= facility %>] performing a pg_basebackup from ${from}:<%= port %>"
+  chpst -u vcap:vcap pg_basebackup -h ${from} -p <%= port %> -D ${datadir} -P -U replication --xlog-method=stream -R \
+      || rm -rf ${datadir}
+
+  echo >&2 "[repl:master] RECOVERED"
+}
+
+case $1 in
+
+  start)
+    pid_guard $PIDFILE $JOB_NAME
+
+<% if p('postgres.tuning.enable') %>
+    # tune that kernel!
+    echo >&2 "[<%= facility %>] tuning the Linux kernel"
+    COMMIT_TUNING=1 ${JOB_DIR}/bin/tune
+<% end %>
+
+    # check if we have initialized already, and need to determine who
+    # the database master is, or if we can rely on bootstrap configuration
+    # (from BOSH) to select one.
+    #
+    if [[ ! -f ${locksdir}/INIT ]]; then
+      # initialize per BOSH configuration (masterip and the db link)
+      bootstrap_postgres
+      start_postgres
+      populate_postgres
+      setup_replication
+      touch ${locksdir}/INIT
+
+    else
+      # determine who our master is;
+      wait_for_master
+
+      if [[ -n "$MASTER_IP" ]]; then
+        # we are not the master; we have another master.
+        # recover ourselves from that master via IP.
+        configure_as replica
+        recover_postgres $MASTER_IP
+        start_postgres
+
+      else
+        # we are the master, we get to (re-)create dbs and users.
+        # and validate our replication configuration.
+        configure_as master
+        start_postgres
+        populate_postgres
+        setup_replication
+      fi
+    fi
+
+    touch ${locksdir}/POSTGRES
     ;;
 
   stop)
     chpst -u vcap:vcap pg_ctl -o "${opts}" -D ${datadir} -w -t 30 -m fast stop \
          >>$LOG_DIR/$JOB_NAME.log 2>&1
     ;;
+
   *)
-    echo "Usage: postgres_ctl {start|stop}"
+    echo "Usage: postgres {start|stop}"
 
     ;;
 

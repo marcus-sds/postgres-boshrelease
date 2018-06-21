@@ -1,2 +1,30 @@
-#!/bin/bash -x
-/var/vcap/packages/postgres/bin/pg_ctl promote -D /var/vcap/store/postgres/db/
+#!/bin/bash
+set -eu
+export PATH=$PATH:/var/vcap/packages/postgres/bin
+datadir=/var/vcap/store/postgres/db
+cfgdir=/var/vcap/jobs/postgres/config
+
+PIDFILE=/var/vcap/sys/run/postgres/postgres.pid
+JOB_DIR=/var/vcap/jobs/postgres
+
+# construct the list of options to pass to pg_ctl.  These mostly get passed
+# onto the `postgres` process on startup, but the `-p` flag is used by the
+# "wait" feature (-w) to ensure that the database has finished booting.
+opts="-p <%= p('pgpool.backend.port') %>"
+opts="${opts} -c external_pid_file=${PIDFILE}"
+opts="${opts} -c data_directory=${datadir}"
+opts="${opts} -c config_file=${JOB_DIR}/config/postgresql.conf"
+opts="${opts} -c hba_file=${JOB_DIR}/config/hba.conf"
+opts="${opts} -c ident_file=${JOB_DIR}/config/ident.conf"
+
+mkdir -p /var/vcap/sys/log/postgres
+exec >>/var/vcap/sys/log/postgres/failover.log 2>&1
+
+echo "[failover] $(date) promoting local node to be master"
+pg_ctl promote -D ${datadir}
+
+echo "[failover] reconfiguring postgresql to be a master node"
+ln -sf ${cfgdir}/pg-master.conf \
+       ${cfgdir}/postgresql.conf
+
+pg_ctl -o "${opts}" -D ${datadir} -w -t 30 restart

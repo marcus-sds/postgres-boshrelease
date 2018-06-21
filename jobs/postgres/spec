@@ -11,6 +11,8 @@ templates:
   helpers/ctl_utils.sh: helpers/ctl_utils.sh
   envrc: envrc
 
+  config/pg-master.conf:  config/pg-master.conf
+  config/pg-replica.conf: config/pg-replica.conf
   config/postgresql.conf: config/postgresql.conf
   config/hba.conf:        config/hba.conf
   config/ident.conf:      config/ident.conf
@@ -93,6 +95,10 @@ properties:
   postgres.replication.master:
     description: IP address of the preferred master node (should be the 0th postgres node's IP)
     default: ~
+
+  postgres.replication.grace:
+    description: Grace period (in seconds) to look for an existing PostgreSQL master node on boot.
+    default: 15
 
   pgpool.users:
     description: "A list of {username: ..., password: ...} objects for defining pgpool users.  Setting the 'admin:' key on a user will make them a superuser."
