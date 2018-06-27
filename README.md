@@ -121,4 +121,4 @@ The following parameters affect high availability:
     allow a `psql` health check to attempt to connect to the other
     node before considering it a failure.  The lower this value,
     the faster your cluster will failover, but the higher a risk
-    of accidental failover and split-brain.
+    of accidental failover and split-brain.  Defaults to `5`.
