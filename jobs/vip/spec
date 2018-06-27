@@ -1,17 +1,44 @@
 ---
-name: haproxy
+name: vip
 packages:
   - haproxy
+  - keepalived
 
 templates:
-  haproxy.config.erb:        config/haproxy.config
-  haproxy_ctl:               bin/haproxy_ctl
-  monit_debugger:            bin/monit_debugger
-  helpers/ctl_setup.sh:      helpers/ctl_setup.sh
-  helpers/ctl_utils.sh:      helpers/ctl_utils.sh
+  bin/haproxy:          bin/haproxy
+  config/haproxy.conf:  config/haproxy.conf
+
+  bin/keepalived:          bin/keepalived
+  config/keepalived.tpl:   config/keepalived.tpl
+
+  helpers/ctl_setup.sh: helpers/ctl_setup.sh
+  helpers/ctl_utils.sh: helpers/ctl_utils.sh
   properties.sh.erb:    data/properties.sh
 
+consumes:
+  - name: db
+    type: postgresql
+
 properties:
+  vip:
+    description: Virtual IP address to trade between the nodes.  This will be the public address of your cluster.  This property is required.
+
+  port:
+    description: What port to listen on for incoming PostgreSQL connections
+    default:     5432
+
+  backend_port:
+    description: What port to connect to on backend PostgreSQL nodes.
+    default:     6432
+
+  keepalived.interface:
+    description: What Linux kernel network interface to attach teh floating VIP to; or 'auto' to use the default.
+    default: auto
+
+  keepalived.virtual_router_id:
+    description: The VRRP virtual router identifier (VRID).  Must be a network-unique number in the range of 1 to 255.
+    default: 1
+
   ha_proxy.log_level:
     description: "Log level"
     default: "info"
@@ -45,15 +72,3 @@ properties:
   ha_proxy.trusted_stats_cidrs:
     description: "Trusted ip range that can access the stats UI"
     default: 0.0.0.0/32
-
-  ha_proxy.tcp:
-    description: "List of mappings to perform tcp-based proxying on. See example for mapping datastructure and keys"
-    default: []
-    example:
-      tcp:
-        - name:  stuff
-          proxy: 1234
-          port:  1234
-          servers:
-          - 10.20.10.10
-          - 10.20.10.11

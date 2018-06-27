@@ -1,43 +1,19 @@
 #!/bin/bash
-#
+set -eu
 
-set -e
-
-source /var/vcap/jobs/haproxy/helpers/ctl_setup.sh 'haproxy'
+exec >>/var/vcap/sys/log/vip/haproxy.log 2>&1
+source /var/vcap/jobs/vip/helpers/ctl_setup.sh vip haproxy
 PATH=/var/vcap/packages/haproxy/bin:$PATH
 
 NAME=haproxy
 DAEMON=$(which haproxy)
-CONFIG=/var/vcap/jobs/haproxy/config/haproxy.config
-DESC="HAProxy"
-USER=vcap
-
-PID_FILE=/var/vcap/sys/run/haproxy/pid
-
-TIMESTAMP=$(which date)
+CONFIG=/var/vcap/jobs/vip/config/haproxy.conf
+PID_FILE=/var/vcap/sys/run/vip/haproxy.pid
 
 test -x "${DAEMON}"
 test -f "${CONFIG}"
 
 RETVAL=0
-
-ensure_dir() {
-    DIR=$1
-    if [ ! -d "${DIR}" ] ; then
-        mkdir -p "${DIR}"
-        chown -R "${USER}":"${USER}" "${DIR}"
-        chmod 755 "${DIR}"
-    fi
-}
-
-ensure_dirs() {
-    ensure_dir "$(dirname "${PID_FILE}")"
-}
-
-remove_pid() {
-    rm -f "${PID_FILE}"
-    rmdir "$(dirname "${PID_FILE}")" || :
-}
 
 start_haproxy() {
     status_haproxy
@@ -45,21 +21,24 @@ start_haproxy() {
         echo "HAProxy is currently running"
     else
         RETVAL=0
-        ensure_dirs
-        echo "$("${TIMESTAMP}"): Starting HAProxy"
+        mkdir -p /var/vcap/sys/run/vip
+        chmod 0755 /var/vcap/sys/run/vip
+        chown -R vcap:vcap /var/vcap/sys/run/vip
+
+        echo "$(date): Starting HAProxy"
         set +e
         "${DAEMON}" -f "${CONFIG}" -D -p "${PID_FILE}" 0<&-
         RETVAL=$?
         set -e
         case "${RETVAL}" in
             0)
-                echo "$("${TIMESTAMP}"): Finished starting HAProxy"
+                echo "$(date): Finished starting HAProxy"
                 echo "SUCCESS"
                 ;;
             *)
-                echo "$("${TIMESTAMP}"): Errored starting HAProxy"
-                echo "$("${TIMESTAMP}"): Errored starting HAProxy" >&2
-                remove_pid
+                echo "$(date): Errored starting HAProxy"
+                echo "$(date): Errored starting HAProxy" >&2
+                rm -f $PID_FILE
                 echo "FAILED - check logs"
                 RETVAL=1
                 ;;
@@ -76,7 +55,7 @@ stop_haproxy() {
         done
         set -e
         if [ "${RETVAL}" = 0 ]; then
-            remove_pid
+          rm -f $PID_FILE
         else
             echo "FAILED - check logs"
         fi
@@ -110,12 +89,12 @@ restart_haproxy() {
 
 case "$1" in
     start)
-        echo -n "Starting ${DESC}: "
+        echo -n "Starting haproxy: "
         start_haproxy
         echo "${NAME}."
         ;;
     stop)
-        echo -n "Stopping ${DESC}: "
+        echo -n "Stopping haproxy: "
         stop_haproxy
         echo "${NAME}."
         ;;
@@ -123,7 +102,7 @@ case "$1" in
         status_haproxy
         ;;
     force-reload|reload|restart)
-        echo -n "Restarting ${DESC}: "
+        echo -n "Restarting haproxy: "
         restart_haproxy
         echo "${NAME}."
         ;;

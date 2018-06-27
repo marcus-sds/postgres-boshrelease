@@ -1,11 +1,13 @@
 #!/bin/bash
-APP_DIR=/var/vcap/jobs/keepalived
+APP_DIR=/var/vcap/jobs/vip
 PKG_DIR=/var/vcap/packages/keepalived
 BIN_DIR=${PKG_DIR}/bin
 SBIN_DIR=${PKG_DIR}/sbin
 CONF_DIR=${APP_DIR}/config
-RUN_DIR=/var/vcap/sys/run/keepalived
-LOG_DIR=/var/vcap/sys/log/keepalived
+RUN_DIR=/var/vcap/sys/run/vip
+LOG_DIR=/var/vcap/sys/log/vip
+
+exec >>${LOG_DIR}/keepalived.log 2>&1
 
 source /var/vcap/packages/keepalived/common/utils.sh
 
@@ -69,8 +71,6 @@ ip_in_network() {
     fi
 }
 
-exec >>${LOG_DIR}/keepalived.log 2>&1
-
 case $1 in
 
   start)
@@ -79,24 +79,23 @@ case $1 in
     chown -R vcap:vcap $RUN_DIR $LOG_DIR
 
     <% if p("keepalived.interface") == "auto" -%>
-    interface=$(interface_for_ip <%= p("keepalived.vip") %>)
+    interface=$(interface_for_ip <%= p("vip") %>)
     if [[ $? != 0 || -z ${interface} ]]; then
-        echo "Could not autodetect interface to use for <%= p("keepalived.vip") %>. Cannot continue."
+        echo "Could not autodetect interface to use for <%= p("vip") %>. Cannot continue."
         exit 1
     fi
-    if grep "interface auto" ${CONF_DIR}/keepalived.config.template > /dev/null; then
-        sed "s/interface auto/interface ${interface}/" ${CONF_DIR}/keepalived.config.template > ${CONF_DIR}/keepalived.config
+    if grep "interface auto" ${CONF_DIR}/keepalived.tpl > /dev/null; then
+        sed "s/interface auto/interface ${interface}/" ${CONF_DIR}/keepalived.tpl > ${CONF_DIR}/keepalived.conf
     fi
     <% else -%>
-    cp ${CONF_DIR}/keepalived.config.template ${CONF_DIR}/keepalived.config
+    cp ${CONF_DIR}/keepalived.tpl ${CONF_DIR}/keepalived.conf
     <% end -%>
 
     $SBIN_DIR/keepalived -l -D -n \
-        -f $CONF_DIR/keepalived.config \
+        -f $CONF_DIR/keepalived.conf \
         --pid=$RUN_DIR/keepalived.pid \
         --vrrp_pid=${RUN_DIR}/vrrp.pid \
         --checkers_pid=${RUN_DIR}/checkers.pid \
-        >> ${LOG_DIR}/keepalived.log 2>&1 &
     ;;
 
   stop)
@@ -115,6 +114,6 @@ case $1 in
     ;;
 
   *)
-    echo "Usage: keepalived_ctl {start|stop}" ;;
+    echo "Usage: keepalived {start|stop}" ;;
 
 esac
