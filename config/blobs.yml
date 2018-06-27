@@ -1,14 +1,18 @@
 haproxy/haproxy-1.8.10.tar.gz:
   size: 2058928
+  object_id: 5fce0e5c-c863-4bdd-6859-485f7ffcfc7f
   sha: f2fd8671c8c40aa85f9d13e9b6c0aebc22a71d33
 haproxy/pcre2-10.31.tar.gz:
   size: 2130574
+  object_id: 81491cd7-e484-460a-7f08-9dc953b79614
   sha: 7a77476a908c16cb26ad8a26363b67f00c8303bd
 haproxy/socat-1.7.3.1.tar.gz:
   size: 606049
+  object_id: abe408af-41c4-49a2-7209-62d64c8efd3f
   sha: a6f1d8ab3e85f565dbe172f33a9be6708dd52ffb
 keepalived/keepalived-1.2.24.tar.gz:
   size: 601873
+  object_id: 09205505-e300-42b0-6513-24d4c4388960
   sha: a69b2c40627a9bd69698a57e81a8c8c97826025d
 pgpool2/pgpool-II-3.7.4.tar.gz:
   size: 3277285
