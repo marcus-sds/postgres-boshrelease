@@ -50,27 +50,75 @@ templates/make_manifest openstack-nova my-networking.yml
 bosh -n deploy
 ```
 
-### Development
+## High Availability
 
-As a developer of this release, create new releases and upload them:
+HA is implemented with automatic failover, if you set
+`postgres.replication.enabled` to true.
 
-```
-bosh create release --force && bosh -n upload release
-```
+On bootstrap, if there is no data directory, the postgres job will
+revert to a normal, index-based setup.  The first node will assume
+the role of the master, and the second will become a replica.
 
-### Final releases
+Once the data directory has been populated, future restarts of the
+postgres job will attempt to contact the other node to see if it
+is a master.  If the other node responds, and reports itself as a
+master, the local node will attempt a `pg_basebackup` from the
+master and assume the role of a replica.
 
-To share final releases:
+If the other node doesn't respond, or reports itself as a replica,
+the local node will keep trying, for up to
+`postgres.replication.grace` seconds, at which point it will
+assume the mantle of leadership and become the master node,
+using its current data directory as the canonical truth.
 
-```
-bosh create release --final
-```
+Each node then starts up a `monitor` process; this process is
+responsible for ultimately promoting a local replica to be a
+master, in the event that the real master goes offline.  It works
+like this:
 
-By default the version number will be bumped to the next major number. You can specify alternate versions:
+  1. Busy-loop (via 1-second sleeps) until the local postgres
+     instance is available on its configured port.  This prevents
+     monitor from trying to restart the postgres while it is
+     running a replica `pg_basebackup`.
 
+  2. Busy-loop (again via 1-second sleeps) for as long as the
+     local postgres is a master.
 
-```
-bosh create release --final --version 2.1
-```
+  3. Busy-loop (again via 1-second sleeps), checking the master
+     status of the other postgres node, until it detects that
+     either the master node has gone away (via a connection
+     timeout), or the master node has somehow become a replica.
 
-After the first release you need to contact [Dmitriy Kalinin](mailto://dkalinin@pivotal.io) to request your project is added to https://bosh.io/releases (as mentioned in README above).
+  4. Promote the local postgres node to a master.
+
+Intelligent routing can be done by colocating the `haproxy` and
+`keepalived` jobs on the instance groups with `postgres`.  HAproxy
+is configured with an external check that will only treat the
+master postgres node as healthy.  This ensures that either load
+balancer node will only ever route to the write master.
+
+The `keepalived` node trades a VRRP VIP between the `haproxy`
+instances.  This ensures that the cluster can be accessed over a
+single, fixed IP address.  Each keepalived process watches its own
+haproxy process; if it notices haproxy is down, it will terminate,
+to allow the VIP to transgress to the other node, who is assumed
+to be healthy.
+
+Here's a diagram:
+
+![High Availability Diagram](docs/ha.png)
+
+The following parameters affect high availability:
+
+  - `postgres.replication.enabled` - Enables replication, which is
+    necessary for HA.  Defaults to `false`.
+
+  - `postgres.replication.grace` - How many seconds to wait for
+    the other node to report itself as a master, during boot.
+    Defaults to `15`.
+
+  - `postgres.replication.connect_timeout` - How many seconds to
+    allow a `psql` health check to attempt to connect to the other
+    node before considering it a failure.  The lower this value,
+    the faster your cluster will failover, but the higher a risk
+    of accidental failover and split-brain.
