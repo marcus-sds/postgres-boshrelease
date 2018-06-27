@@ -1,7 +1,15 @@
-pgpool2/pgpool-II-3.5.4.tar.gz:
-  size: 2237911
-  object_id: c0821167-44de-470e-ad15-48309d6dd44a
-  sha: 4ea15dc8bb740baf720b18f182b400ea60b1ae45
+haproxy/haproxy-1.8.10.tar.gz:
+  size: 2058928
+  sha: f2fd8671c8c40aa85f9d13e9b6c0aebc22a71d33
+haproxy/pcre2-10.31.tar.gz:
+  size: 2130574
+  sha: 7a77476a908c16cb26ad8a26363b67f00c8303bd
+haproxy/socat-1.7.3.1.tar.gz:
+  size: 606049
+  sha: a6f1d8ab3e85f565dbe172f33a9be6708dd52ffb
+keepalived/keepalived-1.2.24.tar.gz:
+  size: 601873
+  sha: a69b2c40627a9bd69698a57e81a8c8c97826025d
 pgpool2/pgpool-II-3.7.4.tar.gz:
   size: 3277285
   object_id: a1c3141d-9058-42a3-77ea-de996af0a8be

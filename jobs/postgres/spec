@@ -5,14 +5,16 @@ packages:
 templates:
   bin/ctl: bin/ctl
   bin/tune: bin/tune
-  bin/monit_debugger: bin/monit_debugger
+  bin/healthy: bin/healthy
+  bin/monitor: bin/monitor
+
+  bin/functions: bin/functions
+
   data/properties.sh.erb: data/properties.sh
   helpers/ctl_setup.sh: helpers/ctl_setup.sh
   helpers/ctl_utils.sh: helpers/ctl_utils.sh
   envrc: envrc
 
-  config/pg-master.conf:  config/pg-master.conf
-  config/pg-replica.conf: config/pg-replica.conf
   config/postgresql.conf: config/postgresql.conf
   config/hba.conf:        config/hba.conf
   config/ident.conf:      config/ident.conf
@@ -24,8 +26,8 @@ provides:
   type: postgresql
   properties:
   - postgres.config
-  - pgpool.users
-  - pgpool.databases
+  - postgres.users
+  - postgres.databases
 
 consumes:
 - name: db
@@ -99,20 +101,23 @@ properties:
   postgres.replication.grace:
     description: Grace period (in seconds) to look for an existing PostgreSQL master node on boot.
     default: 15
+  postgres.replication.connect_timeout:
+    description: How long (in seconds) to wait before timimg out a failover health check from one node to the other.
+    default: 5
 
-  pgpool.users:
-    description: "A list of {username: ..., password: ...} objects for defining pgpool users.  Setting the 'admin:' key on a user will make them a superuser."
+  postgres.users:
+    description: "A list of {username: ..., password: ...} objects for defining PostgreSQL users.  Setting the 'admin:' key on a user will make them a superuser."
     default: []
 
-  pgpool.databases:
+  postgres.databases:
     description: A list of databases to create in Postgres.
     default: []
     example: |
-      pgpool:
+      postgres:
         databases:
           - name: animals
             users:
               - porcupine
               - hedgehog
-            extensions: # optional aray of extensions to enable on this database
-            - citext
+            extensions: # optional array of extensions to enable on this database
+              - citext
