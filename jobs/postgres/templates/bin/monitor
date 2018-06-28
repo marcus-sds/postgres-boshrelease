@@ -1,6 +1,7 @@
 #!/bin/bash
 set -eu
-<% port = p('postgres.config')["port"] || 6432 %>
+<% replication = p('postgres.replication.enabled', false) && link("db").instances.size() > 1 %>
+<% port = p('postgres.config')["port"] || (replication ? 6432 : 5432) %>
 
 # Setup env vars and folders for the webapp_ctl script
 source /var/vcap/jobs/postgres/helpers/ctl_setup.sh postgres
