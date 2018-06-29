@@ -104,6 +104,11 @@ haproxy process; if it notices haproxy is down, it will terminate,
 to allow the VIP to transgress to the other node, who is assumed
 to be healthy.
 
+For backup purposes, a route is exposed through haproxy which
+routes directly to the read-only replica for backup jobs. By default
+this port is your `port` + 2000, but is also configurable via
+`postgres.replication.readonly_port`
+
 Here's a diagram:
 
 ![High Availability Diagram](docs/ha.png)
@@ -122,3 +127,7 @@ The following parameters affect high availability:
     node before considering it a failure.  The lower this value,
     the faster your cluster will failover, but the higher a risk
     of accidental failover and split-brain.  Defaults to `5`.
+
+  - `postgres.replication.readonly_port` - Which port to access the
+    read-only node of the cluster. Defaults to `port + 2000`
+    (with all set to defaults, that is `7432`)
