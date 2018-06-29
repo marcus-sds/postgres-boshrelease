@@ -104,6 +104,10 @@ haproxy process; if it notices haproxy is down, it will terminate,
 to allow the VIP to transgress to the other node, who is assumed
 to be healthy.
 
+It is possible to "instance-up" a single postgres node deploy to a
+HA cluster by adding the `vip` job and changing postgres `instances`
+to 2. More information about this can be found in `manifests/ha.yml`
+
 For backup purposes, a route is exposed through haproxy which
 routes directly to the read-only replica for backup jobs. By default
 this port is your `port` + 2000, but is also configurable via

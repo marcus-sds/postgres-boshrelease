@@ -10,8 +10,12 @@ instance_groups:
   persistent_disk_type: default
   stemcell: default
   vm_type: default
-  instances: 1
+  instances: 2
   jobs:
+  - name: vip
+    properties:
+      vip: (( vip_ip ))
+    release: postgres
   - name: postgres
     properties:
       postgres:
@@ -36,6 +40,8 @@ instance_groups:
         hba:
         - host all all 0.0.0.0/0 md5
         - host all all ::/0 md5
+        replication:
+          enabled: true
         users:
         - admin: true
           password: propane
