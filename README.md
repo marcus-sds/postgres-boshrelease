@@ -110,8 +110,7 @@ to 2. More information about this can be found in `manifests/ha.yml`
 
 For backup purposes, a route is exposed through haproxy which
 routes directly to the read-only replica for backup jobs. By default
-this port is your `port` + 2000, but is also configurable via
-`postgres.replication.readonly_port`
+it is port `7432`, but is also configurable via `vip.readonly_port`
 
 Here's a diagram:
 
@@ -132,6 +131,8 @@ The following parameters affect high availability:
     the faster your cluster will failover, but the higher a risk
     of accidental failover and split-brain.  Defaults to `5`.
 
-  - `postgres.replication.readonly_port` - Which port to access the
-    read-only node of the cluster. Defaults to `port + 2000`
-    (with all set to defaults, that is `7432`)
+  - `vip.readonly_port` - Which port to access the read-only node
+    of the cluster. Defaults to `7542`.
+  
+  - `vip.vip` - Which IP to use as a VIP that is traded between the
+    two nodes. 

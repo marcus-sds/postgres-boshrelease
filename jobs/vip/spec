@@ -23,6 +23,10 @@ properties:
   vip:
     description: Virtual IP address to trade between the nodes.  This will be the public address of your cluster.  This property is required.
 
+  readonly_port:
+    description: Port for external access that is routed directly to readonly Postgres server node
+    default: 7423
+
   port:
     description: What port to listen on for incoming PostgreSQL connections
     default:     5432

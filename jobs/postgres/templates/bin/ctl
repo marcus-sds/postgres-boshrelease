@@ -5,7 +5,7 @@ set -eu
 masterip    = link("db").instances.first.address
 replication = p('postgres.replication.enabled', false) && masterip != ''
 master      = replication && spec.index == 0
-port        = p('postgres.config')["port"] || (replication ? 6432 : 5432)
+port        = p('postgres.config.port', (replication ? 6432 : 5432))
 facility    = replication ? (master ? 'repl:master' : 'repl:slave') : 'standalone'
 
 %>

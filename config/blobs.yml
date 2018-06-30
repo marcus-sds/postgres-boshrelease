@@ -14,10 +14,6 @@ keepalived/keepalived-1.2.24.tar.gz:
   size: 601873
   object_id: 09205505-e300-42b0-6513-24d4c4388960
   sha: a69b2c40627a9bd69698a57e81a8c8c97826025d
-pgpool2/pgpool-II-3.7.4.tar.gz:
-  size: 3277285
-  object_id: a1c3141d-9058-42a3-77ea-de996af0a8be
-  sha: 4a13912250e5cdf33e0d1c2ef55f38d807c59583
 pgrt/pgrt:
   size: 7391896
   object_id: b7968265-d373-404d-b6e0-12caa15f9f98
