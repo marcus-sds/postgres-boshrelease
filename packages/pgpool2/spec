@@ -1,6 +1,0 @@
----
-name: pgpool2
-dependencies:
-  - postgres
-files:
-  - pgpool2/pgpool-II-*.tar.gz

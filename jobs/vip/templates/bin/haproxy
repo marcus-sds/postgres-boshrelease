@@ -1,0 +1,115 @@
+#!/bin/bash
+set -eu
+
+exec >>/var/vcap/sys/log/vip/haproxy.log 2>&1
+source /var/vcap/jobs/vip/helpers/ctl_setup.sh vip haproxy
+PATH=/var/vcap/packages/haproxy/bin:$PATH
+
+NAME=haproxy
+DAEMON=$(which haproxy)
+CONFIG=/var/vcap/jobs/vip/config/haproxy.conf
+PID_FILE=/var/vcap/sys/run/vip/haproxy.pid
+
+test -x "${DAEMON}"
+test -f "${CONFIG}"
+
+RETVAL=0
+
+start_haproxy() {
+    status_haproxy
+    if [ "${RETVAL}" = 0 ]; then
+        echo "HAProxy is currently running"
+    else
+        RETVAL=0
+        mkdir -p /var/vcap/sys/run/vip
+        chmod 0755 /var/vcap/sys/run/vip
+        chown -R vcap:vcap /var/vcap/sys/run/vip
+
+        echo "$(date): Starting HAProxy"
+        set +e
+        "${DAEMON}" -f "${CONFIG}" -D -p "${PID_FILE}" 0<&-
+        RETVAL=$?
+        set -e
+        case "${RETVAL}" in
+            0)
+                echo "$(date): Finished starting HAProxy"
+                echo "SUCCESS"
+                ;;
+            *)
+                echo "$(date): Errored starting HAProxy"
+                echo "$(date): Errored starting HAProxy" >&2
+                rm -f $PID_FILE
+                echo "FAILED - check logs"
+                RETVAL=1
+                ;;
+        esac
+    fi
+}
+
+stop_haproxy() {
+    status_haproxy
+    if [ "${RETVAL}" = 0 ]; then
+        set +e
+        for pid in $(cat "${PID_FILE}"); do
+            kill ${pid} || RETVAL=$?
+        done
+        set -e
+        if [ "${RETVAL}" = 0 ]; then
+          rm -f $PID_FILE
+        else
+            echo "FAILED - check logs"
+        fi
+    else
+        echo "HAProxy not running"
+    fi
+}
+
+# RETVAL = 0 if running, != 0 if stopped
+status_haproxy() {
+    if [ -f "${PID_FILE}" ]; then
+        RETVAL=0
+        set +e
+        for pid in $(cat "${PID_FILE}"); do
+            kill -0 "${pid}" > /dev/null 2>&1 || RETVAL=3
+        done
+        kill -0 $(cat "${PID_FILE}") > /dev/null 2>&1
+        if [ $? != 0 ]; then
+            RETVAL=3
+        fi
+        set -e
+    else
+        RETVAL=1
+    fi
+}
+
+restart_haproxy() {
+    stop_haproxy
+    start_haproxy
+}
+
+case "$1" in
+    start)
+        echo -n "Starting haproxy: "
+        start_haproxy
+        echo "${NAME}."
+        ;;
+    stop)
+        echo -n "Stopping haproxy: "
+        stop_haproxy
+        echo "${NAME}."
+        ;;
+    status)
+        status_haproxy
+        ;;
+    force-reload|reload|restart)
+        echo -n "Restarting haproxy: "
+        restart_haproxy
+        echo "${NAME}."
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|reload|force-reload}" >&2
+        RETVAL=1
+        ;;
+esac
+
+exit "${RETVAL}"

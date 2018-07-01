@@ -1,0 +1,78 @@
+---
+name: vip
+packages:
+  - haproxy
+  - keepalived
+
+templates:
+  bin/haproxy:          bin/haproxy
+  config/haproxy.conf:  config/haproxy.conf
+
+  bin/keepalived:          bin/keepalived
+  config/keepalived.tpl:   config/keepalived.tpl
+
+  helpers/ctl_setup.sh: helpers/ctl_setup.sh
+  helpers/ctl_utils.sh: helpers/ctl_utils.sh
+  properties.sh.erb:    data/properties.sh
+
+consumes:
+  - name: db
+    type: postgresql
+
+properties:
+  vip:
+    description: Virtual IP address to trade between the nodes.  This will be the public address of your cluster.  This property is required.
+
+  readonly_port:
+    description: Port for external access that is routed directly to readonly Postgres server node
+    default: 7423
+
+  port:
+    description: What port to listen on for incoming PostgreSQL connections
+    default:     5432
+
+  backend_port:
+    description: What port to connect to on backend PostgreSQL nodes.
+    default:     6432
+
+  keepalived.interface:
+    description: What Linux kernel network interface to attach teh floating VIP to; or 'auto' to use the default.
+    default: auto
+
+  keepalived.virtual_router_id:
+    description: The VRRP virtual router identifier (VRID).  Must be a network-unique number in the range of 1 to 255.
+    default: 1
+
+  ha_proxy.log_level:
+    description: "Log level"
+    default: "info"
+
+  ha_proxy.connect_timeout:
+    description: "Timeout waiting for connections to establish to a server (in seconds)"
+    default:     5
+  ha_proxy.client_timeout:
+    description: "Timeout waiting for data from a client (in seconds)"
+    default:     30
+  ha_proxy.server_timeout:
+    description: "Timeout waiting for data from a server (in seconds)"
+    default:     30
+  ha_proxy.queue_timeout:
+    description: "Timeout for requests queued waiting for free connection slots (in seconds)"
+    default:     30
+
+  ha_proxy.stats_enable:
+    description: "If true, haproxy will enable a socket for stats. You can see the stats on haproxy_ip:9000/haproxy_stats"
+    default: false
+  ha_proxy.stats_bind:
+    description: "Define one or several listening addresses and/or ports in a frontend."
+    default: "*:9000"
+  ha_proxy.stats_user:
+    description: "User name to authenticate haproxy stats"
+  ha_proxy.stats_password:
+    description: "Password to authenticate haproxy stats"
+  ha_proxy.stats_uri:
+    description: "URI used to access the stats UI."
+    default: "haproxy_stats"
+  ha_proxy.trusted_stats_cidrs:
+    description: "Trusted ip range that can access the stats UI"
+    default: 0.0.0.0/32

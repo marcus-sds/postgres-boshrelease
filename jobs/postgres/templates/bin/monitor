@@ -1,0 +1,82 @@
+#!/bin/bash
+set -eu
+<% replication = p('postgres.replication.enabled', false) && link("db").instances.size() > 1 %>
+<% port = p('postgres.config.port', (replication ? 6432 : 5432)) %>
+
+# Setup env vars and folders for the webapp_ctl script
+source /var/vcap/jobs/postgres/helpers/ctl_setup.sh postgres
+source /var/vcap/jobs/postgres/bin/functions
+exec >>$LOG_DIR/postgres.log 2>&1
+
+# datadir is where PostgreSQL will store the database files.  This really
+# *shouuld* be a persistent disk, unless you know what you are doing.
+datadir=/var/vcap/store/postgres/db
+
+promote() {
+  # construct the list of options to pass to pg_ctl.  These mostly get passed
+  # onto the `postgres` process on startup, but the `-p` flag is used by the
+  # "wait" feature (-w) to ensure that the database has finished booting.
+  opts="-p <%= port %>"
+  opts="${opts} -c external_pid_file=${RUN_DIR}/postgres.pid"
+  opts="${opts} -c data_directory=${datadir}"
+  opts="${opts} -c config_file=${JOB_DIR}/config/postgresql.conf"
+  opts="${opts} -c hba_file=${JOB_DIR}/config/hba.conf"
+  opts="${opts} -c ident_file=${JOB_DIR}/config/ident.conf"
+
+  mkdir -p ${datadir}/archive
+  chown -R vcap:vcap ${datadir}/archive
+
+  echo >&2 "[monitor] promoting postgres to a master..."
+  chpst -u vcap:vcap pg_ctl -D ${datadir} promote
+}
+
+case $1 in
+  start)
+    pid_guard $RUN_DIR/monitor.pid monitor
+    echo $$ > $RUN_DIR/monitor.pid
+
+    <% link("db").instances.reject { |the| the.address == spec.address }.each do |peer| %>
+    MASTER_IP=<%= peer.address %>
+    <% end %>
+
+    # how long to wait for psql to do its work while health checking
+    export PGCONNECT_TIMEOUT=<%= p('postgres.replication.connect_timeout') %>
+
+    # wait for the local node to be up before we ever try to promote it
+    echo "[monitor] waiting for local postgres node to become available on :<%= port %>"
+    while ! psql -p <%= port %> -U vcap postgres -c 'SELECT 1' >/dev/null 2>&1; do
+      sleep 1
+    done
+
+    echo "[monitor] entering main loop..."
+    # loop indefinitely
+    while true; do
+      sleep 1
+      if is_master; then
+        continue
+      fi
+
+      # we are a replica, determine who we talk to
+      if [[ -z ${MASTER_IP:-} ]]; then
+        echo "[monitor] unable to determine master node; bailing out"
+        exit 1
+      fi
+      if ! is_master $MASTER_IP <%= port %>; then
+        unset PGCONNECT_TIMEOUT
+        promote
+        rm -f $RUN_DIR/monitor.pid
+        exit 0
+      fi
+    done
+    ;;
+
+  stop)
+    kill_and_wait $RUN_DIR/monitor.pid
+    ;;
+
+  *)
+    echo "Usage: monitor {start|stop}"
+    ;;
+
+esac
+exit 0
