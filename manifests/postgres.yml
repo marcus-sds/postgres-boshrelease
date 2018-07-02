@@ -77,6 +77,12 @@ stemcells:
 
 update:
   canaries: 1
+  canary_watch_time: 1000-120000
+  max_in_flight: 50
+  serial: false
+  update_watch_time: 1000-120000
+
+releases:
 - name: postgres
   version: 3.0.0
   url: https://github.com/cloudfoundry-community/postgres-boshrelease/releases/download/v3.0.0/postgres-3.0.0.tgz
