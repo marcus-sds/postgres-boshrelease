@@ -1,56 +1,70 @@
-# BOSH Release for postgres
+# PostgreSQL, BOSH-Style
 
-## Usage
+This BOSH release packages up PostgreSQL so that you can deploy it
+on BOSH.  It supports standalone, clustered, and HA
+configurations.
 
-To use this bosh release, first upload it to your bosh:
+# Supported Topologies
 
-```
-bosh target BOSH_HOST
-git clone https://github.com/cloudfoundry-community/postgres-boshrelease.git
-cd postgres-boshrelease
-bosh upload release releases/postgres-1.yml
-```
+## Standalone Configuration
 
-For [bosh-lite](https://github.com/cloudfoundry/bosh-lite), you can quickly create a deployment manifest & deploy a cluster:
+For a single, standalone PostgreSQL node, you only need the
+`postgres` job:
 
 ```
-templates/make_manifest warden
-bosh -n deploy
+instance_groups:
+  - name: db
+    jobs:
+      - name:    postgres
+        release: postgres
 ```
 
-For AWS EC2, create a single VM:
+## Clustered Configuration
+
+To enable replication, deploy multiple nodes and set the
+`postgres.replication.enabled` property to "yes":
 
 ```
-templates/make_manifest aws-ec2
-bosh -n deploy
+instance_groups:
+  - name: db
+    instances: 4
+    jobs:
+      - name:    postgres
+        release: postgres
+        properties:
+          replication:
+            enabled: true
 ```
 
-### Override security groups
+In replicated mode, the bootstrap VM will assume the role of
+master, and the remaining nodes will replicate from it, forming a
+star topology.  No special query routing is done in this
+configuration; applications that wish to make use of read replicas
+must do so explicitly.
 
-For AWS & Openstack, the default deployment assumes there is a `default` security group. If you wish to use a different security group(s) then you can pass in additional configuration when running `make_manifest` above.
+Promotion of a replica is left to the operator.
 
-Create a file `my-networking.yml`:
+## HA Configuration
 
-``` yaml
----
-networks:
-  - name: postgres1
-    type: dynamic
-    cloud_properties:
-      security_groups:
-        - postgres
-```
-
-Where `- postgres` means you wish to use an existing security group called `postgres`.
-
-You now suffix this file path to the `make_manifest` command:
+For a highly-available, single-IP pair of PostgreSQL nodes, the
+`vip` job can be added.  Note that you *must* deploy exactly two
+instances, or HA won't work.  Replication must also be enabled.
 
 ```
-templates/make_manifest openstack-nova my-networking.yml
-bosh -n deploy
-```
+instance_groups:
+  - name: db
+    jobs:
+      - name:    postgres
+        release: postgres
+        properties:
+          replication:
+            enabled: true   # don't forget this!
 
-## High Availability
+      - name:    vip
+        release: postgres
+        properties:
+          vip: 10.3.4.5
+```
 
 HA is implemented with automatic failover, if you set
 `postgres.replication.enabled` to true.
@@ -133,6 +147,6 @@ The following parameters affect high availability:
 
   - `vip.readonly_port` - Which port to access the read-only node
     of the cluster. Defaults to `7542`.
-  
+
   - `vip.vip` - Which IP to use as a VIP that is traded between the
-    two nodes. 
+    two nodes.
