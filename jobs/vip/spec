@@ -52,10 +52,10 @@ properties:
     default:     5
   ha_proxy.client_timeout:
     description: "Timeout waiting for data from a client (in seconds)"
-    default:     30
+    default:     300
   ha_proxy.server_timeout:
     description: "Timeout waiting for data from a server (in seconds)"
-    default:     30
+    default:     300
   ha_proxy.queue_timeout:
     description: "Timeout for requests queued waiting for free connection slots (in seconds)"
     default:     30
