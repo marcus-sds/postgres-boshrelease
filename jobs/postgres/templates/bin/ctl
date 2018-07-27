@@ -99,26 +99,21 @@ opted not to filter out those errors.
 
 EOF
 <% p('postgres.users', []).each do |user| %>
-    echo >>$LOG_DIR/$JOB_NAME.log "[postgres] setting up user <%= user['username'] %>"
-    echo "[$(date)] setting up user <%= user['username'] %>"
+    echo "[postgres] setting up user '<%= user['username'] %>'"
     <% admin = '-DRS' %>
     <% admin = '-drs' if user["admin"] %>
-    set -x
 
     createuser -U vcap -p <%= port %> <%=admin %> -El <%= user['username'] %>
     createdb   -U vcap -p <%= port %>       -O <%= user['username'] %> <%= user['username'] %>
 
     psql -p <%= port %> -U vcap postgres -c "ALTER ROLE \"<%= user['username'] %>\" WITH PASSWORD '<%= user['password'] %>'"
     psql -p <%= port %> -U vcap postgres -c "GRANT ALL PRIVILEGES ON DATABASE \"<%= user['username'] %>\" TO \"<%= user['username'] %>\""
-
-    set +x
     echo
 
 <% end %>
 
 <% p('postgres.databases', []).each do |database| %>
-    echo >>$LOG_DIR/$JOB_NAME.log "[postgres] setting up database <%= database['name'] %>"
-    set -x
+    echo "[postgres] setting up database '<%= database['name'] %>'"
 
     createdb   -U vcap -p <%= port %>       -O vcap <%= database['name'] %>
     <% database['users'].each do |user| %>
@@ -131,13 +126,11 @@ EOF
          psql -p <%= port %> -U vcap "<%= database['name'] %>" -c "CREATE EXTENSION IF NOT EXISTS <%= ext %>"
     <%   end
       end %>
-
-    set +x
     echo
 
 <% end %>
 
-)>$LOG_DIR/user-creation.log 2>&1
+) 2>&1 | grep -v 'already exists'
 }
 
 setup_replication() {
@@ -232,8 +225,7 @@ case $1 in
     ;;
 
   stop)
-    chpst -u vcap:vcap pg_ctl -o "${opts}" -D ${datadir} -w -t 30 -m fast stop \
-         >>$LOG_DIR/$JOB_NAME.log 2>&1
+    chpst -u vcap:vcap pg_ctl -o "${opts}" -D ${datadir} -w -t 30 -m fast stop
     ;;
 
   *)
