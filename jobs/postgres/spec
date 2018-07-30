@@ -122,3 +122,11 @@ properties:
               - hedgehog
             extensions: # optional array of extensions to enable on this database
               - citext
+  postgres.roles:
+    description: "A list of database roles and associated properties to create"
+    default: []
+    example: |
+      - name: pgadmin
+        password: passwd
+        permissions:
+        - "CONNECTION LIMIT 33"
