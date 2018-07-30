@@ -20,6 +20,7 @@ templates:
   config/ident.conf:      config/ident.conf
 
   sql/setup-replication.sql: sql/setup-replication.sql
+  sql/role.sql.erb: sql/roles.sql
 
 provides:
 - name: db
