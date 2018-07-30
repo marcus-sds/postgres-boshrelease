@@ -182,6 +182,12 @@ recover_postgres() {
   echo >&2 "[repl:master] RECOVERED"
 }
 
+create_roles() {
+  echo "[<%= facility %>] Creating roles"
+  psql -p <%= port %> -U vcap postgres \
+       < ${JOB_DIR}/sql/roles.sql
+}
+
 case $1 in
 
   start)
@@ -203,6 +209,7 @@ case $1 in
       start_postgres
       populate_postgres
       setup_replication
+      create_roles
 
     else
       # determine who our master is;
